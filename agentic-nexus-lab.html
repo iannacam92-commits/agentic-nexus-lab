@@ -410,7 +410,7 @@
                                     <div className="space-y-2">
                                         {componentTemplates.map((template) => (
                                             <button
-                                                key={i}
+                                                key={template.name}
                                                 onClick={() => addComponent(template)}
                                                 className="w-full text-left p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-all active:scale-95"
                                             >
@@ -870,7 +870,8 @@
         }
 
         // Render App
-        ReactDOM.render(<App />, document.getElementById('root'));
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
