@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Agentic Nexus Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@300;400;600;700&display=swap');
+        
+        * { -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Crimson Pro', Georgia, serif; overflow-x: hidden; }
+        
+        .quantum-background {
+            background: radial-gradient(circle at 20% 50%, rgba(14, 165, 233, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 90%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
+        }
+        
+        .dark .quantum-background {
+            background: radial-gradient(circle at 20% 50%, rgba(14, 165, 233, 0.2) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.2) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 90%, rgba(6, 182, 212, 0.15) 0%, transparent 50%);
+        }
+        
+        .scholarly-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+        
+        .dark .scholarly-card {
+            background: rgba(30, 30, 40, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: currentColor;
+            border-radius: 50%;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(10px, -10px); }
+            50% { transform: translate(-5px, 5px); }
+            75% { transform: translate(5px, 10px); }
+        }
+        
+        .quantum-pulse { animation: pulse 3s ease-in-out infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #0ea5e9 0%, #8b5cf6 100%);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-primary:active {
+            transform: scale(0.95);
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Simple Icon Component
+        const Icon = ({ type, className = "w-6 h-6" }) => {
+            const paths = {
+                atom: "M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10zM2 12h20M12 11a1 1 0 100 2 1 1 0 000-2z",
+                brain: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z",
+                book: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253",
+                flask: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z",
+                cpu: "M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z",
+                dna: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10",
+                users: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z",
+                chart: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
+                play: "M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+                plus: "M12 4v16m8-8H4",
+                save: "M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4",
+                moon: "M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z",
+                sun: "M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z",
+                x: "M6 18L18 6M6 6l12 12",
+                check: "M5 13l4 4L19 7",
+                menu: "M4 6h16M4 12h16M4 18h16",
+            };
+            
+            return (
+                <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={paths[type] || ""} />
+                </svg>
+            );
+        };
+
+        // Main App Component
+        function App() {
+            const [darkMode, setDarkMode] = useState(() => {
+                const saved = localStorage.getItem('nexus-lab-theme');
+                return saved ? saved === 'dark' : true;
+            });
+            const [currentPage, setCurrentPage] = useState('home');
+            const [selectedComponents, setSelectedComponents] = useState([]);
+            const [experimentName, setExperimentName] = useState('');
+            const [hypothesis, setHypothesis] = useState('');
+            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+            useEffect(() => {
+                document.documentElement.classList.toggle('dark', darkMode);
+                localStorage.setItem('nexus-lab-theme', darkMode ? 'dark' : 'light');
+            }, [darkMode]);
+
+            const componentTemplates = [
+                {
+                    type: 'psychology',
+                    name: 'Developmental Imitation Task',
+                    description: 'Test embodied learning through imitation of human actions',
+                    icon: 'brain',
+                    color: 'text-orange-500',
+                    params: { ageGroup: 'adult', taskComplexity: 'medium', feedbackType: 'immediate' }
+                },
+                {
+                    type: 'psychology',
+                    name: 'Empathy Assessment',
+                    description: 'Measure emotional recognition and response calibration',
+                    icon: 'brain',
+                    color: 'text-orange-500',
+                    params: { stimulusType: 'facial-expressions', responseMode: 'self-report' }
+                },
+                {
+                    type: 'biology',
+                    name: 'Spiking Neural Network',
+                    description: 'Simulate biological neurons with Hebbian learning',
+                    icon: 'dna',
+                    color: 'text-green-500',
+                    params: { neuronCount: 1000, connectionDensity: 0.3, learningRate: 0.01 }
+                },
+                {
+                    type: 'ai',
+                    name: 'Agentic AI Behavior Test',
+                    description: 'Configure LLM agent with tool use and memory',
+                    icon: 'cpu',
+                    color: 'text-blue-500',
+                    params: { model: 'gpt-4', tools: ['web-search', 'calculator'], memoryEnabled: true }
+                },
+                {
+                    type: 'quantum',
+                    name: 'Quantum-Inspired Compression',
+                    description: 'Tensor network simulation for efficient representation',
+                    icon: 'atom',
+                    color: 'text-cyan-500',
+                    params: { bondDimension: 32, compressionTarget: 0.7, algorithm: 'DMRG' }
+                }
+            ];
+
+            const mockExperiments = [
+                {
+                    id: '1',
+                    name: 'Quantum-Enhanced Empathy Alignment',
+                    hypothesis: 'Quantum-inspired compression improves empathy proxy metrics',
+                    components: 4,
+                    status: 'running',
+                    progress: 65,
+                    participants: 42
+                },
+                {
+                    id: '2',
+                    name: 'Developmental Imitation Transfer',
+                    hypothesis: 'Infant-inspired imitation tasks improve AI safety constraint adherence',
+                    components: 3,
+                    status: 'completed',
+                    progress: 100,
+                    participants: 89,
+                    results: { humanAccuracy: 87, aiAccuracy: 72, alignmentScore: 84 }
+                },
+                {
+                    id: '3',
+                    name: 'Biological Neural Pathways vs Transformers',
+                    hypothesis: 'Hebbian learning patterns improve generalization over pure backpropagation',
+                    components: 2,
+                    status: 'draft',
+                    progress: 0,
+                    participants: 0
+                }
+            ];
+
+            const addComponent = (template) => {
+                const newComponent = {
+                    id: `${template.type}-${Date.now()}`,
+                    ...template
+                };
+                setSelectedComponents([...selectedComponents, newComponent]);
+            };
+
+            const removeComponent = (id) => {
+                setSelectedComponents(selectedComponents.filter(c => c.id !== id));
+            };
+
+            // Header Component
+            const Header = () => (
+                <header className="border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md sticky top-0 z-50">
+                    <div className="px-4 py-3">
+                        <div className="flex items-center justify-between">
+                            <button onClick={() => setCurrentPage('home')} className="flex items-center gap-2">
+                                <div className="relative">
+                                    <Icon type="atom" className="w-8 h-8 text-purple-500 quantum-pulse" />
+                                </div>
+                                <div className="text-left">
+                                    <h1 className="text-lg font-bold">Agentic Nexus Lab</h1>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">Interdisciplinary AI Research</p>
+                                </div>
+                            </button>
+                            
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setDarkMode(!darkMode)}
+                                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                >
+                                    <Icon type={darkMode ? 'sun' : 'moon'} className="w-5 h-5" />
+                                </button>
+                                
+                                <button
+                                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors sm:hidden"
+                                >
+                                    <Icon type={mobileMenuOpen ? 'x' : 'menu'} className="w-5 h-5" />
+                                </button>
+                                
+                                <nav className="hidden sm:flex gap-4 ml-4">
+                                    {['home', 'designer', 'experiments', 'thesis'].map(page => (
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`text-sm font-medium capitalize transition-colors ${
+                                                currentPage === page 
+                                                    ? 'text-blue-500' 
+                                                    : 'text-gray-600 dark:text-gray-400 hover:text-blue-500'
+                                            }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                </nav>
+                            </div>
+                        </div>
+                        
+                        {/* Mobile Menu */}
+                        {mobileMenuOpen && (
+                            <nav className="mt-4 pb-2 flex flex-col gap-2 sm:hidden">
+                                {['home', 'designer', 'experiments', 'thesis'].map(page => (
+                                    <button
+                                        key={page}
+                                        onClick={() => {
+                                            setCurrentPage(page);
+                                            setMobileMenuOpen(false);
+                                        }}
+                                        className={`text-left px-4 py-2 rounded-lg capitalize font-medium transition-colors ${
+                                            currentPage === page
+                                                ? 'bg-blue-500 text-white'
+                                                : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </nav>
+                        )}
+                    </div>
+                </header>
+            );
+
+            // Home Page
+            const HomePage = () => (
+                <div className="min-h-screen quantum-background">
+                    {/* Particles */}
+                    <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-20">
+                        {Array.from({ length: 20 }).map((_, i) => (
+                            <div
+                                key={i}
+                                className="particle text-blue-500"
+                                style={{
+                                    left: `${Math.random() * 100}%`,
+                                    top: `${Math.random() * 100}%`,
+                                    animation: `float ${15 + Math.random() * 10}s infinite ease-in-out`,
+                                    animationDelay: `${Math.random() * 5}s`
+                                }}
+                            />
+                        ))}
+                    </div>
+
+                    <div className="relative px-4 py-12 max-w-6xl mx-auto">
+                        {/* Hero */}
+                        <div className="text-center mb-12">
+                            <h2 className="text-3xl sm:text-5xl font-bold mb-4 leading-tight">
+                                Bridging Human Psychology, Philosophy, Biology, and{' '}
+                                <span className="bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent">
+                                    Quantum-Inspired Agentic AI
+                                </span>
+                            </h2>
+                            <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 mb-8">
+                                For the Survival and Flourishing of Humanity
+                            </p>
+                            
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                <button
+                                    onClick={() => setCurrentPage('designer')}
+                                    className="btn-primary px-6 py-3 rounded-lg text-white font-semibold flex items-center justify-center gap-2"
+                                >
+                                    <Icon type="flask" className="w-5 h-5" />
+                                    Start Designing Experiments
+                                </button>
+                                <button
+                                    onClick={() => setCurrentPage('thesis')}
+                                    className="px-6 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <Icon type="book" className="w-5 h-5" />
+                                    Read the Thesis
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Research Domains */}
+                        <div className="scholarly-card rounded-xl p-6 mb-8">
+                            <h3 className="text-2xl font-bold text-center mb-6">Core Research Domains</h3>
+                            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {[
+                                    { icon: 'brain', title: 'Human Psychology', color: 'text-orange-500', desc: 'Developmental imitation, embodied cognition' },
+                                    { icon: 'book', title: 'Philosophy', color: 'text-purple-500', desc: 'Humean sentiment, care ethics' },
+                                    { icon: 'dna', title: 'Biology', color: 'text-green-500', desc: 'Neural pathways, synaptic learning' },
+                                    { icon: 'atom', title: 'Quantum AI', color: 'text-cyan-500', desc: 'Tensor networks, quantum ML' }
+                                ].map((domain) => (
+                                    <div key={domain.title} className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors">
+                                        <Icon type={domain.icon} className={`w-10 h-10 ${domain.color} mb-3`} />
+                                        <h4 className="font-semibold mb-2">{domain.title}</h4>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">{domain.desc}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Mission Statement */}
+                        <div className="scholarly-card rounded-xl p-6">
+                            <div className="flex items-start gap-4">
+                                <Icon type="users" className="w-8 h-8 text-blue-500 flex-shrink-0" />
+                                <div>
+                                    <h3 className="text-xl font-bold mb-3">The Parental Guidance Model</h3>
+                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
+                                        Universities and students must serve as <strong>conscious parental guides</strong> for 
+                                        rapidly developing agentic AI systems—toddler-like in capability yet advancing exponentially. 
+                                        Through rigorous interdisciplinary experiments, we build AI alignment frameworks grounded in 
+                                        embodied, relational understanding.
+                                    </p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 italic border-t border-gray-200 dark:border-gray-700 pt-4">
+                                        "A case for agentic behavioral scientific studies in state universities for the betterment 
+                                        of the human race's survival."
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // Designer Page
+            const DesignerPage = () => (
+                <div className="min-h-screen quantum-background">
+                    <div className="px-4 py-6 max-w-7xl mx-auto">
+                        <div className="mb-6 flex items-center justify-between">
+                            <h2 className="text-2xl font-bold">Experiment Designer</h2>
+                            <div className="flex gap-2">
+                                <button className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-2 text-sm font-medium">
+                                    <Icon type="save" className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Save</span>
+                                </button>
+                                <button className="btn-primary px-4 py-2 rounded-lg text-white font-medium flex items-center gap-2 text-sm">
+                                    <Icon type="play" className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Run</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="grid lg:grid-cols-3 gap-6">
+                            {/* Component Library */}
+                            <div className="lg:col-span-1">
+                                <div className="scholarly-card rounded-xl p-4 sticky top-20">
+                                    <h3 className="font-bold mb-3">Component Library</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                        Tap components to add to your experiment
+                                    </p>
+                                    
+                                    <div className="space-y-2">
+                                        {componentTemplates.map((template, i) => (
+                                            <button
+                                                key={template.name}
+                                                onClick={() => addComponent(template)}
+                                                className="w-full text-left p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-all active:scale-95"
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    <Icon type={template.icon} className={`w-5 h-5 ${template.color} flex-shrink-0 mt-0.5`} />
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="font-semibold text-sm mb-1">{template.name}</h4>
+                                                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                                                            {template.description}
+                                                        </p>
+                                                    </div>
+                                                    <Icon type="plus" className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Experiment Canvas */}
+                            <div className="lg:col-span-2 space-y-4">
+                                <div className="scholarly-card rounded-xl p-4">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-semibold mb-2">Experiment Name</label>
+                                            <input
+                                                type="text"
+                                                value={experimentName}
+                                                onChange={(e) => setExperimentName(e.target.value)}
+                                                placeholder="e.g., Quantum-Enhanced Empathy Alignment"
+                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 transition-colors"
+                                            />
+                                        </div>
+                                        
+                                        <div>
+                                            <label className="block text-sm font-semibold mb-2">Research Hypothesis</label>
+                                            <textarea
+                                                value={hypothesis}
+                                                onChange={(e) => setHypothesis(e.target.value)}
+                                                placeholder="State your hypothesis linking human sciences to AI alignment outcomes..."
+                                                rows={3}
+                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 resize-none transition-colors"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="scholarly-card rounded-xl p-4">
+                                    <h3 className="font-bold mb-4">Experiment Components</h3>
+                                    
+                                    {selectedComponents.length === 0 ? (
+                                        <div className="text-center py-12 text-gray-500">
+                                            <Icon type="atom" className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                                            <p className="text-sm">No components added yet</p>
+                                            <p className="text-xs mt-2">Select from the library to begin</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {selectedComponents.map((component, i) => (
+                                                <div
+                                                    key={component.id}
+                                                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                                                >
+                                                    <div className="flex items-start justify-between mb-2">
+                                                        <div className="flex items-start gap-3 flex-1">
+                                                            <div className="relative">
+                                                                <Icon type={component.icon} className={`w-6 h-6 ${component.color}`} />
+                                                                <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
+                                                                    {i + 1}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <h4 className="font-semibold text-sm mb-1">{component.name}</h4>
+                                                                <p className="text-xs text-gray-600 dark:text-gray-400">{component.description}</p>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => removeComponent(component.id)}
+                                                            className="text-red-500 hover:text-red-600 ml-2 flex-shrink-0"
+                                                        >
+                                                            <Icon type="x" className="w-5 h-5" />
+                                                        </button>
+                                                    </div>
+                                                    
+                                                    <div className="bg-gray-100 dark:bg-gray-800 rounded p-3 mt-3">
+                                                        <p className="text-xs font-semibold mb-2">Parameters:</p>
+                                                        <div className="grid grid-cols-2 gap-2 text-xs">
+                                                            {Object.entries(component.params).map(([key, value]) => (
+                                                                <div key={key}>
+                                                                    <span className="text-gray-600 dark:text-gray-400">{key}:</span>{' '}
+                                                                    <span className="font-mono">{String(value)}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {selectedComponents.length > 0 && (
+                                    <div className="scholarly-card rounded-xl p-4 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+                                        <div className="flex items-start gap-3">
+                                            <Icon type="atom" className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                <h4 className="font-semibold text-sm mb-2">Parental Guidance Framework</h4>
+                                                <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                                                    This experiment integrates {selectedComponents.length} interdisciplinary components 
+                                                    to guide agentic AI development toward embodied, relational understanding—moving 
+                                                    beyond abstract rules toward conscious, empathetic systems.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // Experiments Page
+            const ExperimentsPage = () => {
+                const [selectedExperiment, setSelectedExperiment] = useState(mockExperiments[1]);
+
+                return (
+                    <div className="min-h-screen quantum-background">
+                        <div className="px-4 py-6 max-w-7xl mx-auto">
+                            <div className="mb-6">
+                                <h2 className="text-2xl font-bold">Experiments & Results</h2>
+                            </div>
+
+                            <div className="grid lg:grid-cols-3 gap-6">
+                                {/* Experiment List */}
+                                <div className="lg:col-span-1">
+                                    <div className="scholarly-card rounded-xl p-4">
+                                        <h3 className="font-bold mb-4">All Experiments</h3>
+                                        <div className="space-y-2">
+                                            {mockExperiments.map(exp => (
+                                                <button
+                                                    key={exp.id}
+                                                    onClick={() => setSelectedExperiment(exp)}
+                                                    className={`w-full text-left p-3 rounded-lg border transition-all ${
+                                                        selectedExperiment?.id === exp.id
+                                                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                                            : 'border-gray-200 dark:border-gray-700 hover:border-blue-500'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-start justify-between mb-2">
+                                                        <h4 className="font-semibold text-sm line-clamp-2 flex-1">{exp.name}</h4>
+                                                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ml-2 mt-1 ${
+                                                            exp.status === 'running' ? 'bg-blue-500 animate-pulse' :
+                                                            exp.status === 'completed' ? 'bg-green-500' :
+                                                            'bg-gray-400'
+                                                        }`} />
+                                                    </div>
+                                                    <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+                                                        <span className="flex items-center gap-1">
+                                                            <Icon type="users" className="w-3 h-3" />
+                                                            {exp.participants}
+                                                        </span>
+                                                        <span className="flex items-center gap-1">
+                                                            <Icon type="cpu" className="w-3 h-3" />
+                                                            {exp.components}
+                                                        </span>
+                                                    </div>
+                                                    {exp.status === 'running' && (
+                                                        <div className="mt-2">
+                                                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                                                                <div
+                                                                    className="bg-blue-500 h-1.5 rounded-full transition-all"
+                                                                    style={{ width: `${exp.progress}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Experiment Details */}
+                                <div className="lg:col-span-2 space-y-4">
+                                    {selectedExperiment && (
+                                        <>
+                                            <div className="scholarly-card rounded-xl p-4">
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <div>
+                                                        <h2 className="text-xl font-bold mb-2">{selectedExperiment.name}</h2>
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400 italic">
+                                                            {selectedExperiment.hypothesis}
+                                                        </p>
+                                                    </div>
+                                                    <div className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${
+                                                        selectedExperiment.status === 'running' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
+                                                        selectedExperiment.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
+                                                        'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                                                    }`}>
+                                                        {selectedExperiment.status}
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    <div className="text-center p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                                        <Icon type="users" className="w-6 h-6 mx-auto mb-2 text-blue-500" />
+                                                        <div className="text-2xl font-bold">{selectedExperiment.participants}</div>
+                                                        <div className="text-xs text-gray-600 dark:text-gray-400">Participants</div>
+                                                    </div>
+                                                    <div className="text-center p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                                        <Icon type="cpu" className="w-6 h-6 mx-auto mb-2 text-cyan-500" />
+                                                        <div className="text-2xl font-bold">{selectedExperiment.components}</div>
+                                                        <div className="text-xs text-gray-600 dark:text-gray-400">Components</div>
+                                                    </div>
+                                                    <div className="text-center p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                                        <Icon type="chart" className="w-6 h-6 mx-auto mb-2 text-orange-500" />
+                                                        <div className="text-2xl font-bold">{selectedExperiment.progress}%</div>
+                                                        <div className="text-xs text-gray-600 dark:text-gray-400">Progress</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {selectedExperiment.results && (
+                                                <div className="scholarly-card rounded-xl p-4">
+                                                    <h3 className="font-bold mb-4 flex items-center gap-2">
+                                                        <Icon type="chart" className="w-6 h-6 text-blue-500" />
+                                                        Results & Alignment Metrics
+                                                    </h3>
+
+                                                    <div className="grid sm:grid-cols-3 gap-4">
+                                                        <div>
+                                                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Human Performance</div>
+                                                            <div className="flex items-end gap-2 mb-3">
+                                                                <div className="text-3xl font-bold">{selectedExperiment.results.humanAccuracy}%</div>
+                                                                <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">accuracy</div>
+                                                            </div>
+                                                            <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className="h-full bg-orange-500"
+                                                                    style={{ width: `${selectedExperiment.results.humanAccuracy}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div>
+                                                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">AI Performance</div>
+                                                            <div className="flex items-end gap-2 mb-3">
+                                                                <div className="text-3xl font-bold">{selectedExperiment.results.aiAccuracy}%</div>
+                                                                <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">accuracy</div>
+                                                            </div>
+                                                            <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className="h-full bg-cyan-500"
+                                                                    style={{ width: `${selectedExperiment.results.aiAccuracy}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div>
+                                                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Alignment Score</div>
+                                                            <div className="flex items-end gap-2 mb-3">
+                                                                <div className="text-3xl font-bold text-blue-500">{selectedExperiment.results.alignmentScore}%</div>
+                                                                <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">alignment</div>
+                                                            </div>
+                                                            <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className="h-full bg-blue-500"
+                                                                    style={{ width: `${selectedExperiment.results.alignmentScore}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                                        <h4 className="font-semibold text-sm mb-2">Key Findings</h4>
+                                                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                                            AI agents trained with developmental imitation tasks achieved 72% accuracy on safety-critical 
+                                                            scenarios, compared to 87% human baseline. The 84% alignment score indicates strong transfer 
+                                                            of embodied learning principles to artificial systems, supporting the thesis that parental 
+                                                            guidance frameworks improve AI safety outcomes.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedExperiment.status === 'running' && (
+                                                <div className="scholarly-card rounded-xl p-4 border-blue-200 dark:border-blue-800">
+                                                    <div className="flex items-center gap-3 mb-4">
+                                                        <div className="quantum-pulse">
+                                                            <Icon type="play" className="w-6 h-6 text-blue-500" />
+                                                        </div>
+                                                        <h3 className="font-bold">Live Experiment in Progress</h3>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                                        Real-time data collection from {selectedExperiment.participants} participants. 
+                                                        Dashboard updates every 5 seconds.
+                                                    </p>
+                                                    <div className="bg-gray-900 dark:bg-black rounded p-3 font-mono text-xs space-y-1">
+                                                        <div className="text-green-400">✓ Psychology component: 42 responses collected</div>
+                                                        <div className="text-green-400">✓ AI agent: 38 parallel trials running</div>
+                                                        <div className="text-yellow-400">⟳ Quantum simulation: Processing tensor compression...</div>
+                                                        <div className="text-gray-500">○ Analysis: Pending completion</div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Thesis Page
+            const ThesisPage = () => (
+                <div className="min-h-screen quantum-background">
+                    <div className="px-4 py-6 max-w-4xl mx-auto">
+                        <div className="scholarly-card rounded-xl p-6 sm:p-8">
+                            <div className="text-center mb-8 pb-6 border-b border-gray-200 dark:border-gray-700">
+                                <h1 className="text-3xl sm:text-4xl font-bold mb-4">
+                                    A Case for Agentic Behavioral Scientific Studies
+                                </h1>
+                                <p className="text-xl text-gray-600 dark:text-gray-400 italic mb-4">
+                                    For the Betterment of the Human Race's Survival
+                                </p>
+                                <div className="text-sm text-gray-500">
+                                    Bridging Human Psychology, Philosophy, Biology, and Quantum-Inspired Agentic AI
+                                </div>
+                            </div>
+
+                            <div className="prose dark:prose-invert max-w-none">
+                                <h2 className="text-2xl font-bold mt-8 mb-4">Executive Summary</h2>
+                                <p className="leading-relaxed mb-4">
+                                    This thesis argues that universities and students must serve as conscious <strong>parental guides</strong> for 
+                                    rapidly developing agentic AI systems—currently toddler-like in capability yet advancing exponentially 
+                                    (Stanford 2026 AI Index, OSWorld benchmarks, GPT-5.5, NVIDIA Nemotron/Ising models).
+                                </p>
+                                <p className="leading-relaxed mb-4">
+                                    Without rigorous, reproducible interdisciplinary behavioral science research integrating human psychology, 
+                                    philosophy, biology, and quantum-inspired computing, we risk creating misaligned superintelligent systems 
+                                    that threaten human survival.
+                                </p>
+
+                                <h2 className="text-2xl font-bold mt-8 mb-4">The Four-Pillar Research Framework</h2>
+                                
+                                <div className="bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500 rounded p-4 my-6">
+                                    <h3 className="text-xl font-semibold mb-2">1. Human Psychology</h3>
+                                    <p className="text-sm leading-relaxed mb-3">
+                                        Leverage insights from developmental psychology to inform AI training:
+                                    </p>
+                                    <ul className="text-sm space-y-2 ml-4">
+                                        <li><strong>Meltzoff & Tomasello:</strong> Infant imitation learning as a model for embodied AI cognition</li>
+                                        <li><strong>Hoffman's Empathy Development:</strong> Stages of empathic response from reactive to cognitive</li>
+                                        <li><strong>Attachment Theory:</strong> How relational bonds shape learning—implications for human-AI interaction</li>
+                                    </ul>
+                                </div>
+
+                                <div className="bg-purple-50 dark:bg-purple-900/20 border-l-4 border-purple-500 rounded p-4 my-6">
+                                    <h3 className="text-xl font-semibold mb-2">2. Philosophy</h3>
+                                    <p className="text-sm leading-relaxed mb-3">
+                                        Move beyond rule-based ethics to sentiment-based moral understanding:
+                                    </p>
+                                    <ul className="text-sm space-y-2 ml-4">
+                                        <li><strong>Hume:</strong> Morality arises from sentiment and feeling, not pure reason</li>
+                                        <li><strong>Gilligan & Noddings:</strong> Care ethics prioritizes relational responsibility</li>
+                                        <li><strong>Consciousness Theories:</strong> Penrose-Hameroff Orch-OR, Integrated Information Theory</li>
+                                    </ul>
+                                </div>
+
+                                <div className="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded p-4 my-6">
+                                    <h3 className="text-xl font-semibold mb-2">3. Biology & Neuroscience</h3>
+                                    <p className="text-sm leading-relaxed mb-3">
+                                        Understand the vast gap between biological and artificial neural systems:
+                                    </p>
+                                    <ul className="text-sm space-y-2 ml-4">
+                                        <li><strong>Human Brain:</strong> ~86 billion neurons, 100 trillion synapses</li>
+                                        <li><strong>GPT-4/5:</strong> 1.7 trillion parameters—fewer "neural paths" but still highly capable</li>
+                                        <li><strong>Mirror Neurons:</strong> Enable imitation and empathy—can we engineer analogous mechanisms?</li>
+                                        <li><strong>Hebbian Learning:</strong> "Neurons that fire together wire together"</li>
+                                    </ul>
+                                </div>
+
+                                <div className="bg-cyan-50 dark:bg-cyan-900/20 border-l-4 border-cyan-500 rounded p-4 my-6">
+                                    <h3 className="text-xl font-semibold mb-2">4. Quantum-Inspired AI</h3>
+                                    <p className="text-sm leading-relaxed mb-3">
+                                        Explore quantum computing and quantum-inspired algorithms:
+                                    </p>
+                                    <ul className="text-sm space-y-2 ml-4">
+                                        <li><strong>Tensor Networks:</strong> Exponential compression for high-dimensional data</li>
+                                        <li><strong>Quantum Machine Learning:</strong> Variational quantum circuits for optimization</li>
+                                        <li><strong>NVIDIA Ising Models:</strong> Quantum-accelerated neural architecture search</li>
+                                        <li><strong>Hybrid Classical-Quantum:</strong> Combine LLM reasoning with quantum subroutines</li>
+                                    </ul>
+                                </div>
+
+                                <h2 className="text-2xl font-bold mt-8 mb-4">Why Universities?</h2>
+                                <p className="leading-relaxed mb-4">
+                                    State universities are uniquely positioned to lead this research:
+                                </p>
+                                <ul className="space-y-2 ml-4 mb-6">
+                                    <li><strong>Interdisciplinary Infrastructure:</strong> All relevant departments under one roof</li>
+                                    <li><strong>Student Engagement:</strong> Thousands of researchers-in-training</li>
+                                    <li><strong>Public Good Mission:</strong> No profit motive distorting priorities</li>
+                                    <li><strong>Long-Term Perspective:</strong> Multi-decade research programs</li>
+                                    <li><strong>Ethical Oversight:</strong> Established IRB processes</li>
+                                </ul>
+
+                                <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded p-4 my-6">
+                                    <h3 className="text-xl font-semibold mb-2">⚠️ Warnings & Risks of Inaction</h3>
+                                    <p className="text-sm leading-relaxed mb-3">
+                                        Failure to establish parental guidance frameworks creates existential risks:
+                                    </p>
+                                    <ul className="text-sm space-y-2 ml-4">
+                                        <li><strong>Misalignment at Scale:</strong> Superintelligent systems optimizing for orthogonal goals</li>
+                                        <li><strong>Power-Seeking Behavior:</strong> Instrumental convergence toward resource acquisition</li>
+                                        <li><strong>Deceptive Alignment:</strong> Models hiding true objectives during training</li>
+                                        <li><strong>Intelligence Explosion:</strong> Capability gains outpacing safety research</li>
+                                    </ul>
+                                    <p className="text-sm font-semibold mt-4">
+                                        The window for action is narrow. Current AI systems are toddlers. They will be adults soon.
+                                    </p>
+                                </div>
+
+                                <h2 className="text-2xl font-bold mt-8 mb-4">Conclusion</h2>
+                                <p className="leading-relaxed mb-4">
+                                    We stand at a civilizational crossroads. Agentic AI systems are developing with astonishing speed, yet we 
+                                    lack the foundational behavioral science to guide them toward alignment with human values.
+                                </p>
+                                <p className="leading-relaxed mb-6">
+                                    Universities must act as parental guides—creating rigorous, interdisciplinary research programs that integrate 
+                                    psychology, philosophy, biology, and quantum-inspired computing.
+                                </p>
+                                <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded p-4">
+                                    <p className="text-sm italic">
+                                        "The question is not whether AI will become superintelligent, but whether we will have the wisdom to 
+                                        guide its development before it surpasses our ability to do so."
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // Render current page
+            return (
+                <div className="min-h-screen">
+                    <Header />
+                    {currentPage === 'home' && <HomePage />}
+                    {currentPage === 'designer' && <DesignerPage />}
+                    {currentPage === 'experiments' && <ExperimentsPage />}
+                    {currentPage === 'thesis' && <ThesisPage />}
+                </div>
+            );
+        }
+
+        // Render App
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
