@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en" x-data="breezeApp()" :class="darkMode ? 'dark' : ''" class="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BreezeAI — Company AI Management Hub</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  *{font-family:'Inter',sans-serif;box-sizing:border-box;}
+  :root{--cyan:#06b6d4;--purple:#8b5cf6;--navy:#0a0f1e;--glass:rgba(255,255,255,0.04);}
+  body{background:#0a0f1e;color:#e2e8f0;}
+  .light body{background:#f1f5f9;color:#1e293b;}
+  .glass{background:rgba(255,255,255,0.04);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.08);}
+  .light .glass{background:rgba(255,255,255,0.8);border:1px solid rgba(0,0,0,0.08);}
+  .glow-cyan{box-shadow:0 0 20px rgba(6,182,212,0.3);}
+  .glow-purple{box-shadow:0 0 20px rgba(139,92,246,0.3);}
+  .glow-btn{transition:all 0.2s;box-shadow:0 0 0 rgba(6,182,212,0);}
+  .glow-btn:hover{box-shadow:0 0 24px rgba(6,182,212,0.5);transform:translateY(-1px);}
+  .sidebar{transition:transform 0.3s cubic-bezier(.4,0,.2,1);}
+  .nav-item{transition:all 0.15s;border-radius:10px;cursor:pointer;}
+  .nav-item:hover{background:rgba(6,182,212,0.1);}
+  .nav-item.active{background:linear-gradient(135deg,rgba(6,182,212,0.2),rgba(139,92,246,0.2));border:1px solid rgba(6,182,212,0.3);}
+  .card{transition:transform 0.2s,box-shadow 0.2s;}
+  .card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(6,182,212,0.15);}
+  .modal-backdrop{background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);}
+  .gradient-text{background:linear-gradient(135deg,#06b6d4,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .gradient-bg{background:linear-gradient(135deg,#06b6d4,#8b5cf6);}
+  .thinking-dot{animation:pulse 1.4s infinite;}
+  .thinking-dot:nth-child(2){animation-delay:0.2s;}
+  .thinking-dot:nth-child(3){animation-delay:0.4s;}
+  @keyframes pulse{0%,80%,100%{opacity:0.3;transform:scale(0.8);}40%{opacity:1;transform:scale(1);}}
+  .progress-bar{transition:width 0.5s ease;}
+  .flow-line{stroke:#06b6d4;stroke-width:2;stroke-dasharray:6 3;animation:dash 1s linear infinite;}
+  @keyframes dash{to{stroke-dashoffset:-18;}}
+  .step-node{transition:all 0.3s;}
+  .step-node.running{border-color:#06b6d4;box-shadow:0 0 12px rgba(6,182,212,0.4);}
+  .step-node.done{border-color:#10b981;}
+  input,select,textarea{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;border-radius:8px;padding:8px 12px;width:100%;outline:none;transition:border-color 0.2s;}
+  input:focus,select:focus,textarea:focus{border-color:#06b6d4;box-shadow:0 0 0 2px rgba(6,182,212,0.2);}
+  .light input,.light select,.light textarea{background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.15);color:#1e293b;}
+  select option{background:#0a0f1e;color:#e2e8f0;}
+  .light select option{background:#fff;color:#1e293b;}
+  ::-webkit-scrollbar{width:4px;height:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:rgba(6,182,212,0.3);border-radius:2px;}
+  .sparkline{display:inline-block;vertical-align:middle;}
+  .toast{animation:slideIn 0.3s ease,fadeOut 0.3s ease 2.7s forwards;}
+  @keyframes slideIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  @keyframes fadeOut{to{opacity:0;transform:translateX(100%);}}
+  .toggle-switch{position:relative;display:inline-block;width:44px;height:24px;}
+  .toggle-switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.1);border-radius:24px;transition:.3s;}
+  .slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;}
+  input:checked + .slider{background:linear-gradient(135deg,#06b6d4,#8b5cf6);}
+  input:checked + .slider:before{transform:translateX(20px);}
+  .drag-handle{cursor:grab;color:rgba(255,255,255,0.3);}
+  .drag-handle:hover{color:rgba(6,182,212,0.7);}
+  [x-cloak]{display:none!important;}
+</style>
+<script>
+tailwind.config={darkMode:'class',theme:{extend:{colors:{navy:'#0a0f1e',cyan:'#06b6d4',purple:'#8b5cf6'}}}}
+</script>
+</head>
+<body class="min-h-screen overflow-x-hidden">
+
+<!-- Toast Container -->
+<div class="fixed top-4 right-4 z-[200] flex flex-col gap-2" id="toastContainer"></div>
+
+<!-- App Root -->
+<div class="flex h-screen overflow-hidden" :class="darkMode?'bg-[#0a0f1e] text-slate-200':'bg-slate-100 text-slate-800'">
+
+  <!-- Sidebar -->
+  <aside class="sidebar fixed inset-y-0 left-0 z-50 w-64 flex flex-col glass border-r border-white/5"
+    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
+    <!-- Logo -->
+    <div class="flex items-center gap-3 p-5 border-b border-white/5">
+      <div class="w-9 h-9 gradient-bg rounded-xl flex items-center justify-center shadow-lg glow-cyan">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      </div>
+      <div>
+        <div class="font-bold text-sm gradient-text">BreezeAI</div>
+        <div class="text-xs opacity-40">Management Hub</div>
+      </div>
+      <button @click="sidebarOpen=false" class="ml-auto lg:hidden opacity-40 hover:opacity-100">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <!-- Nav -->
+    <nav class="flex-1 overflow-y-auto p-3 space-y-1">
+      <template x-for="item in navItems" :key="item.id">
+        <div @click="setPage(item.id)" class="nav-item flex items-center gap-3 px-3 py-2.5 text-sm font-medium"
+          :class="currentPage===item.id?'active text-cyan-400':'opacity-60 hover:opacity-100'">
+          <span x-html="item.icon" class="w-5 h-5 flex-shrink-0"></span>
+          <span x-text="item.label"></span>
+          <span x-show="item.badge" x-text="item.badge" class="ml-auto text-xs bg-cyan-500/20 text-cyan-400 rounded-full px-2 py-0.5" x-cloak></span>
+        </div>
+      </template>
+    </nav>
+    <!-- Footer -->
+    <div class="p-4 border-t border-white/5">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 gradient-bg rounded-full flex items-center justify-center text-xs font-bold text-white" x-text="(appData.companyName||'B').charAt(0)"></div>
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-semibold truncate" x-text="appData.companyName||'My Company'"></div>
+          <div class="text-xs opacity-40">Free Plan</div>
+        </div>
+        <button @click="darkMode=!darkMode;saveData()" class="opacity-40 hover:opacity-100">
+          <svg x-show="darkMode" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          <svg x-show="!darkMode" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Overlay -->
+  <div x-show="sidebarOpen" @click="sidebarOpen=false" class="fixed inset-0 z-40 bg-black/50 lg:hidden" x-cloak></div>
+
+  <!-- Main -->
+  <div class="flex-1 flex flex-col min-w-0 lg:ml-64">
+
+    <!-- Top Bar -->
+    <header class="glass border-b border-white/5 px-4 py-3 flex items-center gap-3 sticky top-0 z-30">
+      <button @click="sidebarOpen=true" class="lg:hidden opacity-60 hover:opacity-100">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <!-- Search -->
+      <div class="flex-1 max-w-md relative">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input x-model="searchQuery" placeholder="Search agents, workflows..." class="pl-9 pr-3 py-2 text-sm w-full" style="background:rgba(255,255,255,0.05);border-radius:10px;"/>
+      </div>
+      <!-- Quick Vibe Prompt -->
+      <div class="hidden md:flex items-center gap-2 flex-1 max-w-sm glass rounded-xl px-3 py-2 border border-cyan-500/20">
+        <svg class="w-4 h-4 text-cyan-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m1.636-6.364l.707.707M6.343 17.657l-.707.707"/></svg>
+        <input x-model="vibePrompt" @keydown.enter="processVibePrompt()" placeholder="Quick vibe prompt..." class="flex-1 text-xs bg-transparent border-0 p-0 text-cyan-300 placeholder-cyan-500/40" style="box-shadow:none;"/>
+        <button @click="processVibePrompt()" class="text-xs text-cyan-400 hover:text-cyan-300 font-medium">→</button>
+      </div>
+      <!-- Actions -->
+      <div class="flex items-center gap-2">
+        <button @click="exportData()" title="Export" class="opacity-60 hover:opacity-100 p-2 rounded-lg hover:bg-white/5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        </button>
+        <button @click="importData()" title="Import" class="opacity-60 hover:opacity-100 p-2 rounded-lg hover:bg-white/5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12"/></svg>
+        </button>
+        <div class="w-8 h-8 gradient-bg rounded-full flex items-center justify-center text-xs font-bold text-white cursor-pointer" x-text="(appData.companyName||'B').charAt(0)"></div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <main class="flex-1 overflow-y-auto p-4 md:p-6">
+
+      <!-- ===== DASHBOARD ===== -->
+      <div x-show="currentPage==='dashboard'" x-cloak>
+        <!-- Welcome -->
+        <div class="flex items-start justify-between mb-6 flex-wrap gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-2xl font-bold" x-show="!editingCompany" x-text="'Good morning, '+appData.companyName+'  ✦'"></h1>
+              <input x-show="editingCompany" x-model="appData.companyName" @blur="editingCompany=false;saveData()" @keydown.enter="editingCompany=false;saveData()" class="text-2xl font-bold bg-transparent border-b border-cyan-400 outline-none w-64" x-cloak/>
+              <button @click="editingCompany=true" class="opacity-30 hover:opacity-70" x-show="!editingCompany">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+              </button>
+            </div>
+            <p class="text-sm opacity-50 mt-1">Your AI operations at a glance</p>
+          </div>
+          <div class="flex gap-2">
+            <button @click="showAgentModal=true;resetAgentForm()" class="glow-btn gradient-bg text-white text-sm font-semibold px-4 py-2 rounded-xl flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> New Agent
+            </button>
+            <button @click="showWorkflowModal=true;resetWorkflowForm()" class="glow-btn glass border border-purple-500/30 text-purple-400 text-sm font-semibold px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-purple-500/10">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/></svg> New Workflow
+            </button>
+            <button @click="resetToDemo()" class="glass border border-white/10 text-xs px-3 py-2 rounded-xl opacity-50 hover:opacity-100">Reset Demo</button>
+          </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="card glass rounded-2xl p-4 border border-white/5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-medium opacity-50">Active Agents</span>
+              <div class="w-8 h-8 bg-cyan-500/10 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+              </div>
+            </div>
+            <div class="text-3xl font-bold text-cyan-400" x-text="appData.agents.filter(a=>a.status==='active').length"></div>
+            <div class="text-xs opacity-40 mt-1" x-text="appData.agents.length+' total'"></div>
+          </div>
+          <div class="card glass rounded-2xl p-4 border border-white/5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-medium opacity-50">Workflows</span>
+              <div class="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zm12 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+              </div>
+            </div>
+            <div class="text-3xl font-bold text-purple-400" x-text="appData.workflows.length"></div>
+            <div class="text-xs opacity-40 mt-1" x-text="appData.workflows.filter(w=>w.status==='running').length+' running'"></div>
+          </div>
+          <div class="card glass rounded-2xl p-4 border border-white/5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-medium opacity-50">Est. Monthly Cost</span>
+              <div class="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+            </div>
+            <div class="text-3xl font-bold text-emerald-400" x-text="'$'+appData.stats.monthlyCost"></div>
+            <div class="text-xs opacity-40 mt-1">+12% vs last month</div>
+          </div>
+          <div class="card glass rounded-2xl p-4 border border-white/5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-medium opacity-50">Tasks Completed</span>
+              <div class="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+            </div>
+            <div class="text-3xl font-bold text-amber-400" x-text="appData.stats.tasksCompleted.toLocaleString()"></div>
+            <div class="text-xs opacity-40 mt-1">+<span x-text="appData.stats.tasksToday"></span> today</div>
+          </div>
+        </div>
+
+        <!-- Charts + Activity -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div class="lg:col-span-2 glass rounded-2xl p-5 border border-white/5">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold text-sm">Usage Overview</h3>
+              <select class="text-xs w-32" x-model="chartPeriod">
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+              </select>
+            </div>
+            <canvas id="usageChart" height="180"></canvas>
+          </div>
+          <!-- Activity Feed -->
+          <div class="glass rounded-2xl p-5 border border-white/5">
+            <h3 class="font-semibold text-sm mb-4">Recent Activity</h3>
+            <div class="space-y-3 overflow-y-auto max-h-48">
+              <template x-for="log in appData.activityLog.slice(0,10)" :key="log.id">
+                <div class="flex items-start gap-2 text-xs">
+                  <div class="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" :class="{'bg-cyan-400':log.type==='agent','bg-purple-400':log.type==='workflow','bg-emerald-400':log.type==='success','bg-amber-400':log.type==='warning'}"></div>
+                  <div>
+                    <div class="opacity-80" x-text="log.message"></div>
+                    <div class="opacity-30 mt-0.5" x-text="log.time"></div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Agent Status -->
+        <div class="glass rounded-2xl p-5 border border-white/5">
+          <h3 class="font-semibold text-sm mb-4">Agent Status</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr class="opacity-40 border-b border-white/5">
+                  <th class="text-left pb-2 font-medium">Agent</th>
+                  <th class="text-left pb-2 font-medium">Role</th>
+                  <th class="text-left pb-2 font-medium">LLM</th>
+                  <th class="text-left pb-2 font-medium">Status</th>
+                  <th class="text-left pb-2 font-medium">Last Active</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="agent in appData.agents.slice(0,5)" :key="agent.id">
+                  <tr class="border-b border-white/5 hover:bg-white/2">
+                    <td class="py-2.5 font-medium" x-text="agent.name"></td>
+                    <td class="py-2.5 opacity-60 max-w-[150px] truncate" x-text="agent.role"></td>
+                    <td class="py-2.5"><span class="bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded-full" x-text="agent.llm"></span></td>
+                    <td class="py-2.5">
+                      <span class="px-2 py-0.5 rounded-full text-xs" :class="{'bg-emerald-500/10 text-emerald-400':agent.status==='active','bg-slate-500/10 text-slate-400':agent.status==='idle','bg-amber-500/10 text-amber-400':agent.status==='busy'}" x-text="agent.status"></span>
+                    </td>
+                    <td class="py-2.5 opacity-40" x-text="agent.lastUsed"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== AGENTS ===== -->
+      <div x-show="currentPage==='agents'" x-cloak>
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div>
+            <h1 class="text-2xl font-bold">Agents</h1>
+            <p class="text-sm opacity-50">Manage your AI agents</p>
+          </div>
+          <button @click="showAgentModal=true;resetAgentForm()" class="glow-btn gradient-bg text-white text-sm font-semibold px-4 py-2 rounded-xl flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> New Agent
+          </button>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="flex gap-2 mb-4 flex-wrap">
+          <button @click="agentFilter='all'" class="text-xs px-3 py-1.5 rounded-lg border transition-all" :class="agentFilter==='all'?'border-cyan-500/50 bg-cyan-500/10 text-cyan-400':'border-white/10 opacity-60 hover:opacity-100'">All (<span x-text="appData.agents.length"></span>)</button>
+          <button @click="agentFilter='active'" class="text-xs px-3 py-1.5 rounded-lg border transition-all" :class="agentFilter==='active'?'border-emerald-500/50 bg-emerald-500/10 text-emerald-400':'border-white/10 opacity-60 hover:opacity-100'">Active</button>
+          <button @click="agentFilter='idle'" class="text-xs px-3 py-1.5 rounded-lg border transition-all" :class="agentFilter==='idle'?'border-slate-500/50 bg-slate-500/10 text-slate-400':'border-white/10 opacity-60 hover:opacity-100'">Idle</button>
+        </div>
+
+        <!-- Agents Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <template x-for="agent in filteredAgents" :key="agent.id">
+            <div class="card glass rounded-2xl p-5 border border-white/5 flex flex-col gap-3">
+              <div class="flex items-start justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center text-white font-bold text-sm shadow" x-text="agent.name.charAt(0)"></div>
+                  <div>
+                    <div class="font-semibold text-sm" x-text="agent.name"></div>
+                    <div class="text-xs opacity-50 mt-0.5" x-text="agent.role.substring(0,40)+(agent.role.length>40?'...':'')"></div>
+                  </div>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-xs flex-shrink-0" :class="{'bg-emerald-500/10 text-emerald-400':agent.status==='active','bg-slate-500/10 text-slate-400':agent.status==='idle','bg-amber-500/10 text-amber-400':agent.status==='busy'}" x-text="agent.status"></span>
+              </div>
+              <!-- LLM + Tools -->
+              <div class="flex flex-wrap gap-1.5">
+                <span class="text-xs bg-cyan-500/10 text-cyan-400 rounded-lg px-2 py-0.5" x-text="agent.llm"></span>
+                <template x-for="tool in agent.tools.slice(0,3)" :key="tool">
+                  <span class="text-xs bg-white/5 opacity-70 rounded-lg px-2 py-0.5" x-text="tool"></span>
+                </template>
+                <span x-show="agent.tools.length>3" class="text-xs bg-white/5 opacity-50 rounded-lg px-2 py-0.5" x-text="'+'+(agent.tools.length-3)+' more'"></span>
+              </div>
+              <!-- Temp -->
+              <div class="flex items-center gap-2 text-xs opacity-50">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                Temp: <span x-text="agent.temperature"></span> · Last: <span x-text="agent.lastUsed"></span>
+              </div>
+              <!-- Actions -->
+              <div class="flex gap-2 mt-1">
+                <button @click="testChatAgent(agent)" class="flex-1 text-xs gradient-bg text-white rounded-xl py-2 font-semibold hover:opacity-90 transition-opacity">Test Chat</button>
+                <button @click="editAgent(agent)" class="text-xs glass border border-white/10 rounded-xl px-3 py-2 hover:border-cyan-500/30 transition-colors">Edit</button>
+                <button @click="deleteAgent(agent.id)" class="text-xs glass border border-red-500/20 text-red-400 rounded-xl px-3 py-2 hover:border-red-500/50 transition-colors">Del</button>
+              </div>
+            </div>
+          </template>
+          <!-- Empty -->
+          <div x-show="filteredAgents.length===0" class="col-span-full text-center py-16 opacity-40">
+            <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18"/></svg>
+            <p class="text-sm">No agents yet. Create your first agent.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== WORKFLOWS ===== -->
+      <div x-show="currentPage==='workflows'" x-cloak>
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div>
+            <h1 class="text-2xl font-bold">Workflows</h1>
+            <p class="text-sm opacity-50">Orchestrate multi-agent pipelines</p>
+          </div>
+          <button @click="showWorkflowModal=true;resetWorkflowForm()" class="glow-btn gradient-bg text-white text-sm font-semibold px-4 py-2 rounded-xl flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> New Workflow
+          </button>
+        </div>
+        <div class="space-y-3">
+          <template x-for="wf in appData.workflows" :key="wf.id">
+            <div class="card glass rounded-2xl p-5 border border-white/5">
+              <div class="flex items-start justify-between flex-wrap gap-3">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <h3 class="font-semibold" x-text="wf.name"></h3>
+                    <span class="text-xs px-2 py-0.5 rounded-full" :class="{'bg-emerald-500/10 text-emerald-400':wf.status==='idle','bg-cyan-500/10 text-cyan-400 animate-pulse':wf.status==='running','bg-slate-500/10 text-slate-400':wf.status==='draft'}" x-text="wf.status"></span>
+                  </div>
+                  <p class="text-xs opacity-50" x-text="wf.description"></p>
+                  <div class="flex items-center gap-3 mt-2 text-xs opacity-40">
+                    <span x-text="wf.steps.length+' steps'"></span>
+                    <span>·</span>
+                    <span x-text="'Last run: '+(wf.lastRun||'Never')"></span>
+                    <span>·</span>
+                    <span x-text="(wf.successRate||0)+'% success'"></span>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <button @click="runWorkflow(wf)" class="text-xs gradient-bg text-white rounded-xl px-4 py-2 font-semibold hover:opacity-90 transition flex items-center gap-1" :disabled="wf.status==='running'">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Run
+                  </button>
+                  <button @click="editWorkflow(wf)" class="text-xs glass border border-white/10 rounded-xl px-3 py-2 hover:border-cyan-500/30">Edit</button>
+                  <button @click="exportWorkflow(wf)" class="text-xs glass border border-white/10 rounded-xl px-3 py-2 hover:border-purple-500/30" title="Export JSON">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                  </button>
+                  <button @click="deleteWorkflow(wf.id)" class="text-xs glass border border-red-500/20 text-red-400 rounded-xl px-3 py-2">Del</button>
+                </div>
+              </div>
+              <!-- Steps visual -->
+              <div x-show="wf.steps.length>0" class="mt-4 overflow-x-auto">
+                <div class="flex items-center gap-1 min-w-0">
+                  <template x-for="(step,idx) in wf.steps" :key="idx">
+                    <div class="flex items-center gap-1">
+                      <div class="step-node flex-shrink-0 glass border rounded-xl px-3 py-2 text-xs" :class="getStepClass(wf,idx)">
+                        <div class="font-medium truncate max-w-[100px]" x-text="step.agent||'Step '+(idx+1)"></div>
+                        <div class="opacity-40 truncate max-w-[100px]" x-text="step.task?step.task.substring(0,25)+'...':''"></div>
+                      </div>
+                      <svg x-show="idx<wf.steps.length-1" class="w-4 h-4 text-cyan-500 opacity-50 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </div>
+                  </template>
+                </div>
+              </div>
+              <!-- Run Log -->
+              <div x-show="wf.runLog && wf.runLog.length>0" class="mt-4 glass rounded-xl p-3 text-xs font-mono space-y-1 max-h-40 overflow-y-auto">
+                <template x-for="(line,i) in wf.runLog" :key="i">
+                  <div class="flex items-start gap-2">
+                    <span class="opacity-30 flex-shrink-0" x-text="'>'"></span>
+                    <span :class="{'text-cyan-400':line.type==='info','text-emerald-400':line.type==='success','text-amber-400':line.type==='thinking','text-red-400':line.type==='error'}" x-text="line.msg"></span>
+                  </div>
+                </template>
+                <div x-show="wf.status==='running'" class="flex items-center gap-1 text-amber-400">
+                  <span>Thinking</span>
+                  <span class="thinking-dot">.</span><span class="thinking-dot">.</span><span class="thinking-dot">.</span>
+                </div>
+              </div>
+            </div>
+          </template>
+          <div x-show="appData.workflows.length===0" class="text-center py-16 opacity-40">
+            <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/></svg>
+            <p class="text-sm">No workflows yet. Create your first pipeline.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== INTEGRATIONS ===== -->
+      <div x-show="currentPage==='integrations'" x-cloak>
+        <div class="mb-6">
+          <h1 class="text-2xl font-bold">Integrations & Models</h1>
+          <p class="text-sm opacity-50">Connect your AI providers and tools</p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- API Keys -->
+          <div class="glass rounded-2xl p-5 border border-white/5">
+            <h3 class="font-semibold mb-4 flex items-center gap-2">
+              <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+              API Keys
+            </h3>
+            <div class="space-y-3">
+              <template x-for="provider in appData.apiKeys" :key="provider.id">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0" :class="provider.color" x-text="provider.label.charAt(0)"></div>
+                  <div class="flex-1">
+                    <div class="text-xs font-medium mb-1" x-text="provider.label"></div>
+                    <div class="relative">
+                      <input :type="provider.show?'text':'password'" x-model="provider.key" :placeholder="provider.placeholder" class="text-xs pr-8"/>
+                      <button @click="provider.show=!provider.show" class="absolute right-2 top-1/2 -translate-y-1/2 opacity-40 hover:opacity-100">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="provider.show?'M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 4.411m0 0L21 21':'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'"></path></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <button @click="saveApiKey(provider)" class="text-xs gradient-bg text-white px-3 py-1.5 rounded-lg font-medium hover:opacity-90">Save</button>
+                </div>
+              </template>
+            </div>
+            <!-- Ollama Toggle -->
+            <div class="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+              <div>
+                <div class="text-xs font-medium">Local Ollama Mode</div>
+                <div class="text-xs opacity-40 mt-0.5">Connect to local Ollama instance</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" x-model="appData.ollamaEnabled" @change="saveData()">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div x-show="appData.ollamaEnabled" class="mt-3">
+              <input x-model="appData.ollamaEndpoint" placeholder="http://localhost:11434" class="text-xs"/>
+            </div>
+          </div>
+
+          <!-- Tool Connections -->
+          <div class="glass rounded-2xl p-5 border border-white/5">
+            <h3 class="font-semibold mb-4 flex items-center gap-2">
+              <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>
+              Tool Connections
+            </h3>
+            <div class="space-y-2">
+              <template x-for="tool in appData.toolConnections" :key="tool.id">
+                <div class="flex items-center justify-between glass rounded-xl px-4 py-3 border border-white/5">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-lg" x-text="tool.emoji"></div>
+                    <div>
+                      <div class="text-xs font-medium" x-text="tool.name"></div>
+                      <div class="text-xs opacity-40" x-text="tool.connected?'Connected':'Not connected'"></div>
+                    </div>
+                  </div>
+                  <button @click="toggleToolConnection(tool)" class="text-xs px-3 py-1.5 rounded-lg font-medium transition-all"
+                    :class="tool.connected?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-red-500/10 hover:text-red-400':'gradient-bg text-white hover:opacity-90'">
+                    <span x-text="tool.connected?'Connected':'Connect'"></span>
+                  </button>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ANALYTICS ===== -->
+      <div x-show="currentPage==='analytics'" x-cloak>
+        <div class="mb-6 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 class="text-2xl font-bold">Analytics</h1>
+            <p class="text-sm opacity-50">AI usage insights and performance</p>
+          </div>
+          <div class="flex gap-2">
+            <select x-model="analyticsFilter" class="text-xs w-36">
+              <option value="7d">Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+              <option value="90d">Last 90 days</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          <div class="glass rounded-2xl p-5 border border-white/5">
+            <h3 class="font-semibold text-sm mb-4">Cost Breakdown by Model</h3>
+            <canvas id="costChart" height="220"></canvas>
+          </div>
+          <div class="glass rounded-2xl p-5 border border-white/5">
+            <h3 class="font-semibold text-sm mb-4">Usage by Department</h3>
+            <canvas id="deptChart" height="220"></canvas>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="glass rounded-2xl p-5 border border-white/5">
+            <h3 class="font-semibold text-sm mb-4">Workflow Success Rate</h3>
+            <canvas id="successChart" height="200"></canvas>
+          </div>
+          <!-- Agent Leaderboard -->
+          <div class="glass rounded-2xl p-5 border border-white/5">
+            <h3 class="font-semibold text-sm mb-4">Agent Performance Leaderboard</h3>
+            <div class="space-y-2">
+              <template x-for="(agent,idx) in agentLeaderboard" :key="agent.id">
+                <div class="flex items-center gap-3">
+                  <div class="w-6 text-center text-xs font-bold opacity-40" x-text="idx+1"></div>
+                  <div class="w-7 h-7 gradient-bg rounded-lg flex items-center justify-center text-white text-xs font-bold" x-text="agent.name.charAt(0)"></div>
+                  <div class="flex-1">
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="text-xs font-medium" x-text="agent.name"></span>
+                      <span class="text-xs text-cyan-400" x-text="agent.tasks+' tasks'"></span>
+                    </div>
+                    <div class="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <div class="h-full gradient-bg rounded-full progress-bar" :style="'width:'+agent.pct+'%'"></div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== GOVERNANCE ===== -->
+      <div x-show="currentPage==='governance'" x-cloak>
+        <div class="mb-6">
+          <h1 class="text-2xl font-bold">Governance & Team</h1>
+          <p class="text-sm opacity-50">Control, compliance, and collaboration</p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+          <!-- Risk Scores -->
+          <div class="glass rounded-2xl p-5 border border-white/5">
+            <h3 class="font-semibold text-sm mb-4">Compliance Score</h3>
+            <div class="text-5xl font-bold text-center text-emerald-400 mb-2" x-text="appData.compliance.score+'%'"></div>
+            <div class="h-2 bg-white/5 rounded-full overflow-hidden mb-3">
+              <div class="h-full bg-emerald-400 rounded-full progress-bar" :style="'width:'+appData.compliance.score+'%'"></div>
+            </div>
+            <div class="space-y-2 text-xs">
+              <template x-for="item in appData.compliance.checks" :key="item.label">
+                <div class="flex items-center justify-between">
+                  <span class="opacity-60" x-text="item.label"></span>
+                  <span :class="item.pass?'text-emerald-400':'text-red-400'" x-text="item.pass?'Pass':'Fail'"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- AI Policy Toggles -->
+          <div class="glass rounded-2xl p-5 border border-white/5">
+            <h3 class="font-semibold text-sm mb-4">AI Policies</h3>
+            <div class="space-y-3">
+              <template x-for="policy in appData.policies" :key="policy.id">
+                <div class="flex items-center justify-between">
+                  <div class="flex-1 pr-3">
+                    <div class="text-xs font-medium" x-text="policy.label"></div>
+                    <div class="text-xs opacity-40 mt-0.5" x-text="policy.desc"></div>
+                  </div>
+                  <label class="toggle-switch flex-shrink-0">
+                    <input type="checkbox" x-model="policy.enabled" @change="saveData();toast('Policy updated','success')">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Knowledge Base -->
+          <div class="glass rounded-2xl p-5 border border-white/5">
+            <h3 class="font-semibold text-sm mb-4">Knowledge Base</h3>
+            <div class="border-2 border-dashed border-white/10 rounded-xl p-4 text-center mb-3 hover:border-cyan-500/30 transition-colors">
+              <input type="file" id="kbUpload" multiple class="hidden" @change="uploadKbFiles($event)"/>
+              <label for="kbUpload" class="cursor-pointer">
+                <svg class="w-8 h-8 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                <div class="text-xs opacity-50">Drop files or click to upload</div>
+              </label>
+            </div>
+            <div class="space-y-1 max-h-36 overflow-y-auto">
+              <template x-for="file in appData.knowledgeBase" :key="file.name">
+                <div class="flex items-center justify-between text-xs glass rounded-lg px-3 py-2 border border-white/5">
+                  <div class="flex items-center gap-2">
+                    <svg class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span class="truncate max-w-[140px]" x-text="file.name"></span>
+                  </div>
+                  <button @click="removeKbFile(file.name)" class="text-red-400 opacity-50 hover:opacity-100">×</button>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Team + Audit Log -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Team -->
+          <div class="glass rounded-2xl p-5 border border-white/5">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold text-sm">Team Members</h3>
+              <button @click="showTeamModal=true;newMember={name:'',email:'',role:'Analyst'}" class="text-xs gradient-bg text-white px-3 py-1.5 rounded-lg">+ Add</button>
+            </div>
+            <div class="space-y-2">
+              <template x-for="member in appData.team" :key="member.id">
+                <div class="flex items-center justify-between glass rounded-xl px-3 py-2.5 border border-white/5">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 gradient-bg rounded-full flex items-center justify-center text-white text-xs font-bold" x-text="member.name.charAt(0)"></div>
+                    <div>
+                      <div class="text-xs font-medium" x-text="member.name"></div>
+                      <div class="text-xs opacity-40" x-text="member.email"></div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs px-2 py-0.5 rounded-full" :class="{'bg-purple-500/10 text-purple-400':member.role==='Admin','bg-cyan-500/10 text-cyan-400':member.role==='Manager','bg-slate-500/10 text-slate-400':member.role==='Analyst'}" x-text="member.role"></span>
+                    <button @click="removeTeamMember(member.id)" class="text-red-400 opacity-40 hover:opacity-100 text-xs">×</button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Audit Log -->
+          <div class="glass rounded-2xl p-5 border border-white/5">
+            <h3 class="font-semibold text-sm mb-4">Audit Log</h3>
+            <div class="space-y-2 max-h-64 overflow-y-auto">
+              <template x-for="log in appData.auditLog" :key="log.id">
+                <div class="flex items-start gap-3 text-xs">
+                  <div class="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 bg-cyan-400"></div>
+                  <div class="flex-1">
+                    <div class="opacity-80" x-text="log.action"></div>
+                    <div class="opacity-30 mt-0.5 flex items-center gap-2">
+                      <span x-text="log.user"></span>
+                      <span>·</span>
+                      <span x-text="log.time"></span>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/5 px-6 py-3 flex items-center justify-between text-xs opacity-30">
+      <span>Built with vibe coding ✦</span>
+      <span>BreezeAI v2.0</span>
+    </footer>
+  </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Agent Modal -->
+<div x-show="showAgentModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4" x-cloak>
+  <div class="modal-backdrop fixed inset-0" @click="showAgentModal=false"></div>
+  <div class="glass rounded-2xl border border-white/10 w-full max-w-2xl max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl">
+    <div class="p-6 border-b border-white/5 flex items-center justify-between sticky top-0 glass">
+      <h2 class="font-bold text-lg" x-text="editingAgentId?'Edit Agent':'New Agent'"></h2>
+      <button @click="showAgentModal=false" class="opacity-40 hover:opacity-100 text-2xl leading-none">×</button>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-xs font-medium opacity-60 block mb-1.5">Agent Name *</label>
+          <input x-model="agentForm.name" placeholder="e.g. Research Assistant"/>
+        </div>
+        <div>
+          <label class="text-xs font-medium opacity-60 block mb-1.5">LLM Model *</label>
+          <select x-model="agentForm.llm">
+            <option>GPT-4o</option>
+            <option>GPT-4o Mini</option>
+            <option>Claude Opus 4.7</option>
+            <option>Claude Sonnet 4.6</option>
+            <option>Grok-2</option>
+            <option>Ollama (local)</option>
+            <option>Custom</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-medium opacity-60 block mb-1.5">Role / Goal</label>
+        <input x-model="agentForm.role" placeholder="Describe what this agent does in plain English..."/>
+      </div>
+      <div>
+        <label class="text-xs font-medium opacity-60 block mb-1.5">Backstory / Description</label>
+        <textarea x-model="agentForm.description" rows="3" placeholder="Agent's background, expertise, and personality..."></textarea>
+      </div>
+      <div>
+        <label class="text-xs font-medium opacity-60 block mb-1.5">Tools</label>
+        <div class="flex flex-wrap gap-2">
+          <template x-for="tool in availableTools" :key="tool">
+            <button type="button" @click="toggleTool(tool)"
+              class="text-xs px-3 py-1.5 rounded-lg border transition-all"
+              :class="agentForm.tools.includes(tool)?'border-cyan-500/50 bg-cyan-500/10 text-cyan-400':'border-white/10 opacity-60 hover:opacity-100'"
+              x-text="tool"></button>
+          </template>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-medium opacity-60 block mb-1.5">Temperature: <span x-text="agentForm.temperature"></span></label>
+        <input type="range" x-model="agentForm.temperature" min="0" max="1" step="0.1" class="w-full accent-cyan-400 bg-transparent border-0 p-0"/>
+      </div>
+      <div>
+        <label class="text-xs font-medium opacity-60 block mb-1.5">Status</label>
+        <select x-model="agentForm.status">
+          <option value="active">Active</option>
+          <option value="idle">Idle</option>
+          <option value="busy">Busy</option>
+        </select>
+      </div>
+    </div>
+    <div class="p-6 border-t border-white/5 flex gap-3 justify-end">
+      <button @click="showAgentModal=false" class="text-sm glass border border-white/10 px-4 py-2 rounded-xl hover:border-white/20">Cancel</button>
+      <button @click="saveAgent()" class="text-sm gradient-bg text-white font-semibold px-6 py-2 rounded-xl hover:opacity-90 glow-btn" x-text="editingAgentId?'Save Changes':'Create Agent'"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Workflow Modal -->
+<div x-show="showWorkflowModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4" x-cloak>
+  <div class="modal-backdrop fixed inset-0" @click="showWorkflowModal=false"></div>
+  <div class="glass rounded-2xl border border-white/10 w-full max-w-2xl max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl">
+    <div class="p-6 border-b border-white/5 flex items-center justify-between sticky top-0 glass">
+      <h2 class="font-bold text-lg" x-text="editingWorkflowId?'Edit Workflow':'New Workflow'"></h2>
+      <button @click="showWorkflowModal=false" class="opacity-40 hover:opacity-100 text-2xl leading-none">×</button>
+    </div>
+    <div class="p-6 space-y-4">
+      <div>
+        <label class="text-xs font-medium opacity-60 block mb-1.5">Workflow Name *</label>
+        <input x-model="workflowForm.name" placeholder="e.g. Weekly Content Pipeline"/>
+      </div>
+      <div>
+        <label class="text-xs font-medium opacity-60 block mb-1.5">Description</label>
+        <textarea x-model="workflowForm.description" rows="2" placeholder="Describe what this workflow does..."></textarea>
+      </div>
+      <!-- AI Generate Steps -->
+      <div class="glass rounded-xl p-4 border border-cyan-500/20">
+        <div class="flex items-center gap-2 mb-2">
+          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m1.636-6.364l.707.707M6.343 17.657l-.707.707"/></svg>
+          <span class="text-xs font-medium text-cyan-400">AI Step Generator</span>
+        </div>
+        <div class="flex gap-2">
+          <input x-model="workflowForm.aiPrompt" placeholder="Describe your workflow in plain English..." class="flex-1 text-xs"/>
+          <button @click="generateSteps()" class="text-xs gradient-bg text-white px-4 py-2 rounded-lg font-medium flex-shrink-0 hover:opacity-90">Generate</button>
+        </div>
+      </div>
+      <!-- Steps -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-medium opacity-60">Steps</label>
+          <button @click="addStep()" class="text-xs text-cyan-400 hover:text-cyan-300">+ Add Step</button>
+        </div>
+        <div class="space-y-2">
+          <template x-for="(step,idx) in workflowForm.steps" :key="idx">
+            <div class="glass rounded-xl p-3 border border-white/5">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="drag-handle text-base">⋮⋮</span>
+                <span class="text-xs font-medium opacity-60">Step <span x-text="idx+1"></span></span>
+                <button @click="removeStep(idx)" class="ml-auto text-red-400 opacity-50 hover:opacity-100 text-xs">Remove</button>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <select x-model="step.agent" class="text-xs">
+                  <option value="">Select Agent...</option>
+                  <template x-for="agent in appData.agents" :key="agent.id">
+                    <option :value="agent.name" x-text="agent.name"></option>
+                  </template>
+                </select>
+                <input x-model="step.task" placeholder="Task instruction..." class="text-xs"/>
+              </div>
+              <div class="mt-2">
+                <input x-model="step.condition" placeholder="Condition (optional, e.g. 'if result contains error')" class="text-xs opacity-60"/>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+    <div class="p-6 border-t border-white/5 flex gap-3 justify-end">
+      <button @click="showWorkflowModal=false" class="text-sm glass border border-white/10 px-4 py-2 rounded-xl hover:border-white/20">Cancel</button>
+      <button @click="saveWorkflow()" class="text-sm gradient-bg text-white font-semibold px-6 py-2 rounded-xl hover:opacity-90 glow-btn" x-text="editingWorkflowId?'Save Changes':'Create Workflow'"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Agent Chat Modal -->
+<div x-show="showChatModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4" x-cloak>
+  <div class="modal-backdrop fixed inset-0" @click="showChatModal=false"></div>
+  <div class="glass rounded-2xl border border-white/10 w-full max-w-lg max-h-[90vh] flex flex-col relative z-10 shadow-2xl">
+    <div class="p-5 border-b border-white/5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 gradient-bg rounded-xl flex items-center justify-center text-white text-xs font-bold" x-text="chatAgent?.name?.charAt(0)||'A'"></div>
+        <div>
+          <div class="font-semibold text-sm" x-text="chatAgent?.name||'Agent'"></div>
+          <div class="text-xs opacity-40" x-text="chatAgent?.role?.substring(0,50)||''"></div>
+        </div>
+      </div>
+      <button @click="showChatModal=false" class="opacity-40 hover:opacity-100 text-2xl leading-none">×</button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-5 space-y-3 min-h-[300px] max-h-[400px]">
+      <template x-for="(msg,i) in chatMessages" :key="i">
+        <div :class="msg.role==='user'?'flex justify-end':'flex justify-start'">
+          <div class="max-w-[80%] rounded-2xl px-4 py-2.5 text-sm"
+            :class="msg.role==='user'?'gradient-bg text-white':'glass border border-white/10 text-slate-200'">
+            <span x-show="msg.role==='assistant' && msg.thinking" class="flex items-center gap-1 text-amber-400">
+              <span class="thinking-dot w-1.5 h-1.5 bg-amber-400 rounded-full inline-block"></span>
+              <span class="thinking-dot w-1.5 h-1.5 bg-amber-400 rounded-full inline-block"></span>
+              <span class="thinking-dot w-1.5 h-1.5 bg-amber-400 rounded-full inline-block"></span>
+            </span>
+            <span x-show="!msg.thinking" x-text="msg.content"></span>
+          </div>
+        </div>
+      </template>
+    </div>
+    <div class="p-4 border-t border-white/5 flex gap-2">
+      <input x-model="chatInput" @keydown.enter="sendChatMessage()" placeholder="Type a message..." class="flex-1 text-sm"/>
+      <button @click="sendChatMessage()" class="gradient-bg text-white px-4 py-2 rounded-xl font-semibold text-sm hover:opacity-90">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- Team Member Modal -->
+<div x-show="showTeamModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4" x-cloak>
+  <div class="modal-backdrop fixed inset-0" @click="showTeamModal=false"></div>
+  <div class="glass rounded-2xl border border-white/10 w-full max-w-md relative z-10 shadow-2xl">
+    <div class="p-5 border-b border-white/5 flex items-center justify-between">
+      <h2 class="font-bold">Add Team Member</h2>
+      <button @click="showTeamModal=false" class="opacity-40 hover:opacity-100 text-2xl leading-none">×</button>
+    </div>
+    <div class="p-5 space-y-3">
+      <div><label class="text-xs opacity-60 block mb-1">Name</label><input x-model="newMember.name" placeholder="Jane Smith"/></div>
+      <div><label class="text-xs opacity-60 block mb-1">Email</label><input x-model="newMember.email" type="email" placeholder="jane@company.com"/></div>
+      <div><label class="text-xs opacity-60 block mb-1">Role</label>
+        <select x-model="newMember.role"><option>Admin</option><option>Manager</option><option>Analyst</option></select>
+      </div>
+    </div>
+    <div class="p-5 border-t border-white/5 flex gap-3 justify-end">
+      <button @click="showTeamModal=false" class="text-sm glass border border-white/10 px-4 py-2 rounded-xl">Cancel</button>
+      <button @click="addTeamMember()" class="text-sm gradient-bg text-white font-semibold px-6 py-2 rounded-xl">Add Member</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="importInput" accept=".json" class="hidden" @change="handleImport($event)"/>
+
+<script>
+function breezeApp() {
+  return {
+    // State
+    currentPage: 'dashboard',
+    sidebarOpen: false,
+    darkMode: true,
+    searchQuery: '',
+    vibePrompt: '',
+    editingCompany: false,
+    chartPeriod: '7d',
+    analyticsFilter: '30d',
+    agentFilter: 'all',
+    showAgentModal: false,
+    showWorkflowModal: false,
+    showChatModal: false,
+    showTeamModal: false,
+    editingAgentId: null,
+    editingWorkflowId: null,
+    chatAgent: null,
+    chatMessages: [],
+    chatInput: '',
+    newMember: {name:'',email:'',role:'Analyst'},
+
+    agentForm: {name:'',role:'',description:'',llm:'Claude Sonnet 4.6',tools:[],temperature:0.7,status:'active'},
+    workflowForm: {name:'',description:'',aiPrompt:'',steps:[]},
+
+    availableTools: ['Web Search','Email','Database','Google Drive','Slack','Notion','Code Executor','File Reader','API Caller','Calculator'],
+
+    navItems: [
+      {id:'dashboard',label:'Dashboard',icon:'<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>'},
+      {id:'agents',label:'Agents',icon:'<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>'},
+      {id:'workflows',label:'Workflows',icon:'<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/></svg>'},
+      {id:'integrations',label:'Integrations',icon:'<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>'},
+      {id:'analytics',label:'Analytics',icon:'<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>'},
+      {id:'governance',label:'Governance',icon:'<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>'},
+    ],
+
+    appData: {},
+    charts: {},
+
+    init() {
+      this.loadData();
+      this.$nextTick(() => {
+        this.initCharts();
+      });
+    },
+
+    setPage(id) {
+      this.currentPage = id;
+      this.sidebarOpen = false;
+      this.$nextTick(() => {
+        if (id === 'dashboard') this.initUsageChart();
+        if (id === 'analytics') this.initAnalyticsCharts();
+      });
+    },
+
+    // ---- DATA ----
+    getDefaultData() {
+      return {
+        companyName: 'Acme Corp',
+        ollamaEnabled: false,
+        ollamaEndpoint: 'http://localhost:11434',
+        stats: {monthlyCost:'284', tasksCompleted: 4821, tasksToday: 37},
+        agents: [
+          {id:1,name:'Aria Research',role:'Senior Research Analyst — finds and synthesizes information from the web',description:'Expert researcher with 10+ years of domain knowledge across tech and finance.',llm:'Claude Sonnet 4.6',tools:['Web Search','File Reader'],temperature:0.7,status:'active',lastUsed:'2 min ago'},
+          {id:2,name:'Max Outreach',role:'Sales Development Rep — writes personalized cold emails',description:'Persuasive communicator who crafts compelling outreach with high open rates.',llm:'GPT-4o',tools:['Email','Database','Web Search'],temperature:0.9,status:'busy',lastUsed:'15 min ago'},
+          {id:3,name:'Dev Bot',role:'Full-stack engineer — writes, reviews, and debugs code',description:'Senior software engineer specializing in Python, TypeScript, and system design.',llm:'Claude Sonnet 4.6',tools:['Code Executor','File Reader','API Caller'],temperature:0.2,status:'idle',lastUsed:'1 hr ago'},
+          {id:4,name:'Luna Analytics',role:'Data analyst — processes datasets and generates insights',description:'Quantitative analyst with expertise in statistics and data visualization.',llm:'GPT-4o Mini',tools:['Database','Calculator','File Reader'],temperature:0.5,status:'active',lastUsed:'5 min ago'},
+          {id:5,name:'Porter Ops',role:'Operations coordinator — manages workflows and scheduling',description:'Meticulous coordinator ensuring all moving parts align perfectly.',llm:'Grok-2',tools:['Slack','Email','Notion'],temperature:0.6,status:'active',lastUsed:'30 min ago'},
+        ],
+        workflows: [
+          {id:1,name:'Weekly Content Pipeline',description:'Research trends → draft blog post → review → publish to Notion',steps:[{agent:'Aria Research',task:'Research top 5 AI trends this week',condition:''},{agent:'Max Outreach',task:'Draft engaging blog post from research',condition:''},{agent:'Dev Bot',task:'Review and optimize the content',condition:''},{agent:'Porter Ops',task:'Publish to Notion and schedule social posts',condition:''}],status:'idle',lastRun:'2026-05-06',successRate:94,runLog:[]},
+          {id:2,name:'Lead Qualification Flow',description:'Enrich leads → score → route to correct sales rep',steps:[{agent:'Luna Analytics',task:'Enrich lead data from database',condition:''},{agent:'Luna Analytics',task:'Score lead 0-100 based on ICP fit',condition:''},{agent:'Max Outreach',task:'Route high-score leads to senior reps',condition:'if score > 70'}],status:'idle',lastRun:'2026-05-08',successRate:88,runLog:[]},
+          {id:3,name:'Daily Standup Digest',description:'Gather team updates and summarize into Slack',steps:[{agent:'Porter Ops',task:'Pull all team updates from Notion',condition:''},{agent:'Aria Research',task:'Summarize into 3 bullet points per person',condition:''},{agent:'Porter Ops',task:'Post digest to #standup Slack channel',condition:''}],status:'draft',lastRun:null,successRate:0,runLog:[]},
+        ],
+        activityLog: [
+          {id:1,type:'agent',message:'Aria Research completed: AI Trends Report',time:'2 min ago'},
+          {id:2,type:'workflow',message:'Lead Qualification Flow ran successfully',time:'15 min ago'},
+          {id:3,type:'success',message:'Max Outreach sent 12 personalized emails',time:'23 min ago'},
+          {id:4,type:'agent',message:'Luna Analytics processed Q1 dataset',time:'1 hr ago'},
+          {id:5,type:'warning',message:'Dev Bot hit rate limit — retrying in 30s',time:'1.5 hr ago'},
+          {id:6,type:'workflow',message:'Weekly Content Pipeline triggered',time:'2 hr ago'},
+          {id:7,type:'agent',message:'Porter Ops scheduled 8 social posts',time:'3 hr ago'},
+          {id:8,type:'success',message:'Workflow: Lead Qualification — 94% success',time:'4 hr ago'},
+        ],
+        apiKeys: [
+          {id:'openai',label:'OpenAI',placeholder:'sk-proj-...',key:'',show:false,color:'bg-emerald-500/20 text-emerald-400'},
+          {id:'anthropic',label:'Anthropic',placeholder:'sk-ant-...',key:'',show:false,color:'bg-purple-500/20 text-purple-400'},
+          {id:'grok',label:'Grok / xAI',placeholder:'xai-...',key:'',show:false,color:'bg-cyan-500/20 text-cyan-400'},
+        ],
+        toolConnections: [
+          {id:'slack',name:'Slack',emoji:'💬',connected:true},
+          {id:'gmail',name:'Gmail',emoji:'📧',connected:false},
+          {id:'gdrive',name:'Google Drive',emoji:'📁',connected:true},
+          {id:'notion',name:'Notion',emoji:'📝',connected:true},
+          {id:'database',name:'PostgreSQL',emoji:'🗄️',connected:false},
+        ],
+        policies: [
+          {id:'approval',label:'Require approval for external data access',desc:'Prompts user before agent reads external APIs',enabled:true},
+          {id:'logging',label:'Log all prompts and responses',desc:'Full audit trail of every agent interaction',enabled:true},
+          {id:'pii',label:'PII detection & redaction',desc:'Auto-redact personal data before processing',enabled:false},
+          {id:'budget',label:'Monthly cost budget limit',desc:'Pause agents when $500/mo threshold reached',enabled:true},
+          {id:'human',label:'Human-in-the-loop for critical actions',desc:'Require confirmation for irreversible actions',enabled:true},
+        ],
+        compliance: {
+          score: 87,
+          checks: [
+            {label:'Data encryption at rest',pass:true},
+            {label:'Audit logging enabled',pass:true},
+            {label:'PII handling policy',pass:false},
+            {label:'API key rotation (<90d)',pass:true},
+            {label:'Role-based access control',pass:true},
+          ]
+        },
+        team: [
+          {id:1,name:'Alex Rivera',email:'alex@acme.com',role:'Admin'},
+          {id:2,name:'Sam Chen',email:'sam@acme.com',role:'Manager'},
+          {id:3,name:'Jordan Lee',email:'jordan@acme.com',role:'Analyst'},
+        ],
+        auditLog: [
+          {id:1,action:'Agent "Aria Research" created',user:'Alex Rivera',time:'2026-05-09 09:15'},
+          {id:2,action:'Workflow "Lead Qualification" ran',user:'System',time:'2026-05-09 08:45'},
+          {id:3,action:'API key updated: Anthropic',user:'Alex Rivera',time:'2026-05-08 16:30'},
+          {id:4,action:'Policy "Require approval" enabled',user:'Sam Chen',time:'2026-05-08 14:20'},
+          {id:5,action:'Agent "Dev Bot" status changed to idle',user:'System',time:'2026-05-08 11:00'},
+          {id:6,action:'Team member Jordan Lee added',user:'Alex Rivera',time:'2026-05-07 09:00'},
+        ],
+        knowledgeBase: [
+          {name:'company-handbook.pdf',size:'2.4 MB'},
+          {name:'product-specs-v3.docx',size:'840 KB'},
+          {name:'sales-playbook.md',size:'120 KB'},
+        ],
+      };
+    },
+
+    loadData() {
+      const saved = localStorage.getItem('breezeai_data');
+      if (saved) {
+        try { this.appData = JSON.parse(saved); }
+        catch(e) { this.appData = this.getDefaultData(); }
+      } else {
+        this.appData = this.getDefaultData();
+      }
+      const savedTheme = localStorage.getItem('breezeai_theme');
+      if (savedTheme !== null) this.darkMode = savedTheme === 'dark';
+    },
+
+    saveData() {
+      localStorage.setItem('breezeai_data', JSON.stringify(this.appData));
+      localStorage.setItem('breezeai_theme', this.darkMode ? 'dark' : 'light');
+    },
+
+    resetToDemo() {
+      if (!confirm('Reset all data to demo defaults?')) return;
+      this.appData = this.getDefaultData();
+      this.saveData();
+      this.toast('Demo data restored!','success');
+      this.$nextTick(()=>this.initCharts());
+    },
+
+    // ---- COMPUTED ----
+    get filteredAgents() {
+      return this.appData.agents.filter(a => {
+        const matchFilter = this.agentFilter === 'all' || a.status === this.agentFilter;
+        const matchSearch = !this.searchQuery || a.name.toLowerCase().includes(this.searchQuery.toLowerCase()) || a.role.toLowerCase().includes(this.searchQuery.toLowerCase());
+        return matchFilter && matchSearch;
+      });
+    },
+
+    get agentLeaderboard() {
+      const agents = [...this.appData.agents];
+      const taskCounts = [89,72,65,54,48];
+      return agents.slice(0,5).map((a,i)=>({...a,tasks:taskCounts[i]||30,pct:Math.round((taskCounts[i]||30)/89*100)})).sort((a,b)=>b.tasks-a.tasks);
+    },
+
+    // ---- AGENTS ----
+    resetAgentForm() {
+      this.agentForm = {name:'',role:'',description:'',llm:'Claude Sonnet 4.6',tools:[],temperature:0.7,status:'active'};
+      this.editingAgentId = null;
+    },
+
+    editAgent(agent) {
+      this.agentForm = {...agent, tools:[...agent.tools]};
+      this.editingAgentId = agent.id;
+      this.showAgentModal = true;
+    },
+
+    toggleTool(tool) {
+      const idx = this.agentForm.tools.indexOf(tool);
+      if (idx >= 0) this.agentForm.tools.splice(idx,1);
+      else this.agentForm.tools.push(tool);
+    },
+
+    saveAgent() {
+      if (!this.agentForm.name.trim()) { this.toast('Agent name required','error'); return; }
+      if (this.editingAgentId) {
+        const idx = this.appData.agents.findIndex(a=>a.id===this.editingAgentId);
+        if (idx>=0) this.appData.agents[idx] = {...this.agentForm, id:this.editingAgentId, lastUsed:'Just now'};
+        this.toast('Agent updated!','success');
+      } else {
+        const id = Date.now();
+        this.appData.agents.push({...this.agentForm, id, lastUsed:'Just now'});
+        this.appData.activityLog.unshift({id:Date.now(),type:'agent',message:`Agent "${this.agentForm.name}" created`,time:'Just now'});
+        this.toast('Agent created!','success');
+      }
+      this.saveData();
+      this.showAgentModal = false;
+      this.$nextTick(()=>{ if(this.currentPage==='dashboard') this.initUsageChart(); });
+    },
+
+    deleteAgent(id) {
+      if (!confirm('Delete this agent?')) return;
+      this.appData.agents = this.appData.agents.filter(a=>a.id!==id);
+      this.saveData();
+      this.toast('Agent deleted','info');
+    },
+
+    // ---- CHAT ----
+    testChatAgent(agent) {
+      this.chatAgent = agent;
+      this.chatMessages = [{role:'assistant',content:`Hi! I'm ${agent.name}. ${agent.role}. How can I help you today?`,thinking:false}];
+      this.chatInput = '';
+      this.showChatModal = true;
+    },
+
+    async sendChatMessage() {
+      if (!this.chatInput.trim()) return;
+      const userMsg = this.chatInput.trim();
+      this.chatInput = '';
+      this.chatMessages.push({role:'user',content:userMsg});
+      const thinkMsg = {role:'assistant',content:'',thinking:true};
+      this.chatMessages.push(thinkMsg);
+      await this.sleep(1200 + Math.random()*800);
+      const responses = this.getMockResponse(userMsg, this.chatAgent);
+      thinkMsg.thinking = false;
+      thinkMsg.content = responses;
+    },
+
+    getMockResponse(msg, agent) {
+      const lc = msg.toLowerCase();
+      const name = agent?.name || 'I';
+      if (lc.includes('hello')||lc.includes('hi')) return `Hello! I'm ${name}, ready to assist. What would you like me to work on?`;
+      if (lc.includes('report')||lc.includes('research')) return `I'll research that for you. Based on recent data, I've identified 3 key insights: (1) Market momentum is accelerating at 23% YoY, (2) Three major competitors just entered the space, (3) Customer acquisition costs are trending downward. Want me to dig deeper on any of these?`;
+      if (lc.includes('email')||lc.includes('write')) return `Here's a draft:\n\nSubject: Quick question about [topic]\n\nHi [Name],\n\nI noticed [personalization]. We help companies like yours achieve [outcome].\n\nWould 15 minutes this week work?\n\nBest,\n[Your name]\n\nShall I refine the tone or personalization?`;
+      if (lc.includes('code')||lc.includes('function')) return "Here's a clean implementation:\n\n```python\ndef process_data(items: list) -> dict:\n    results = {}\n    for item in items:\n        key = item.get('id')\n        results[key] = transform(item)\n    return results\n```\n\nTime complexity: O(n). Want me to add error handling or tests?";
+      if (lc.includes('analyz')||lc.includes('data')) return `Analysis complete. Key findings:\n• 847 records processed\n• Mean value: 142.3 (σ=24.1)\n• 3 anomalies detected at rows 201, 445, 712\n• Correlation coefficient with target: r=0.87\n\nRecommendation: Focus optimization on the top 20% of performers.`;
+      return `Understood. As ${name}, I'll ${agent?.role?.toLowerCase()||'help you with that'}. Let me process your request and get back to you with a detailed response. Anything specific you'd like me to focus on?`;
+    },
+
+    // ---- WORKFLOWS ----
+    resetWorkflowForm() {
+      this.workflowForm = {name:'',description:'',aiPrompt:'',steps:[]};
+      this.editingWorkflowId = null;
+    },
+
+    editWorkflow(wf) {
+      this.workflowForm = {name:wf.name,description:wf.description,aiPrompt:'',steps:wf.steps.map(s=>({...s}))};
+      this.editingWorkflowId = wf.id;
+      this.showWorkflowModal = true;
+    },
+
+    addStep() {
+      this.workflowForm.steps.push({agent:'',task:'',condition:''});
+    },
+
+    removeStep(idx) {
+      this.workflowForm.steps.splice(idx,1);
+    },
+
+    generateSteps() {
+      const prompt = this.workflowForm.aiPrompt.toLowerCase();
+      if (!prompt) { this.toast('Enter a description first','error'); return; }
+      this.toast('Generating steps...','info');
+      // Mock intelligent parsing
+      const patterns = [
+        {kw:['research','find','search'],agent:'Aria Research',task:'Research and gather relevant information'},
+        {kw:['email','outreach','send'],agent:'Max Outreach',task:'Draft and send personalized communications'},
+        {kw:['code','build','develop','implement'],agent:'Dev Bot',task:'Write and test the code implementation'},
+        {kw:['analyz','data','process','report'],agent:'Luna Analytics',task:'Analyze data and generate insights report'},
+        {kw:['schedule','publish','post','coordinate'],agent:'Porter Ops',task:'Coordinate and publish across channels'},
+      ];
+      const steps = [];
+      patterns.forEach(p => {
+        if (p.kw.some(k=>prompt.includes(k))) {
+          steps.push({agent:p.agent,task:p.task,condition:''});
+        }
+      });
+      if (steps.length === 0) {
+        steps.push({agent:'Aria Research',task:'Gather initial context and requirements',condition:''});
+        steps.push({agent:'Luna Analytics',task:'Process and analyze the gathered data',condition:''});
+        steps.push({agent:'Porter Ops',task:'Summarize and deliver the final output',condition:''});
+      }
+      setTimeout(()=>{
+        this.workflowForm.steps = steps;
+        this.toast(`Generated ${steps.length} steps!`,'success');
+      }, 800);
+    },
+
+    saveWorkflow() {
+      if (!this.workflowForm.name.trim()) { this.toast('Workflow name required','error'); return; }
+      if (this.editingWorkflowId) {
+        const idx = this.appData.workflows.findIndex(w=>w.id===this.editingWorkflowId);
+        if (idx>=0) {
+          this.appData.workflows[idx] = {...this.appData.workflows[idx], name:this.workflowForm.name, description:this.workflowForm.description, steps:this.workflowForm.steps};
+        }
+        this.toast('Workflow updated!','success');
+      } else {
+        this.appData.workflows.push({
+          id:Date.now(), name:this.workflowForm.name, description:this.workflowForm.description,
+          steps:this.workflowForm.steps, status:'idle', lastRun:null, successRate:0, runLog:[]
+        });
+        this.toast('Workflow created!','success');
+      }
+      this.saveData();
+      this.showWorkflowModal = false;
+    },
+
+    deleteWorkflow(id) {
+      if (!confirm('Delete this workflow?')) return;
+      this.appData.workflows = this.appData.workflows.filter(w=>w.id!==id);
+      this.saveData();
+      this.toast('Workflow deleted','info');
+    },
+
+    async runWorkflow(wf) {
+      if (wf.status === 'running') return;
+      wf.status = 'running';
+      wf.runLog = [];
+      wf.currentStep = -1;
+      this.saveData();
+
+      const log = (msg, type='info') => { wf.runLog.push({msg, type}); };
+
+      log(`🚀 Starting workflow: ${wf.name}`, 'info');
+      await this.sleep(600);
+
+      for (let i = 0; i < wf.steps.length; i++) {
+        wf.currentStep = i;
+        const step = wf.steps[i];
+        log(`⚡ Step ${i+1}: ${step.agent || 'Agent'} — ${step.task}`, 'info');
+        await this.sleep(400);
+        log(`🤔 ${step.agent || 'Agent'} is processing...`, 'thinking');
+        await this.sleep(1200 + Math.random()*1000);
+        if (step.condition) {
+          log(`🔀 Checking condition: "${step.condition}"`, 'info');
+          await this.sleep(400);
+        }
+        log(`✅ Step ${i+1} complete`, 'success');
+        await this.sleep(300);
+      }
+
+      log(`🎉 Workflow completed successfully!`, 'success');
+      wf.status = 'idle';
+      wf.currentStep = -1;
+      wf.lastRun = new Date().toISOString().split('T')[0];
+      wf.successRate = Math.round(90 + Math.random()*9);
+      this.appData.stats.tasksCompleted += wf.steps.length;
+      this.appData.activityLog.unshift({id:Date.now(),type:'success',message:`Workflow "${wf.name}" completed`,time:'Just now'});
+      this.saveData();
+      this.toast(`Workflow "${wf.name}" completed!`,'success');
+    },
+
+    getStepClass(wf, idx) {
+      if (wf.status === 'running') {
+        if (idx < (wf.currentStep||0)) return 'done';
+        if (idx === (wf.currentStep||0)) return 'running';
+      }
+      if (wf.lastRun) return 'done';
+      return '';
+    },
+
+    exportWorkflow(wf) {
+      const blob = new Blob([JSON.stringify(wf,null,2)],{type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${wf.name.replace(/\s+/g,'-')}.json`;
+      a.click(); URL.revokeObjectURL(url);
+      this.toast('Workflow exported!','success');
+    },
+
+    // ---- INTEGRATIONS ----
+    saveApiKey(provider) {
+      this.saveData();
+      this.appData.auditLog.unshift({id:Date.now(),action:`API key updated: ${provider.label}`,user:'You',time:new Date().toLocaleString()});
+      this.toast(`${provider.label} API key saved!`,'success');
+    },
+
+    toggleToolConnection(tool) {
+      tool.connected = !tool.connected;
+      this.saveData();
+      this.toast(tool.connected ? `${tool.name} connected!` : `${tool.name} disconnected`, tool.connected?'success':'info');
+    },
+
+    // ---- GOVERNANCE ----
+    uploadKbFiles(e) {
+      const files = Array.from(e.target.files);
+      files.forEach(f => {
+        if (!this.appData.knowledgeBase.find(k=>k.name===f.name)) {
+          this.appData.knowledgeBase.push({name:f.name, size:(f.size/1024).toFixed(0)+' KB'});
+        }
+      });
+      this.saveData();
+      this.toast(`${files.length} file(s) added to knowledge base`,'success');
+    },
+
+    removeKbFile(name) {
+      this.appData.knowledgeBase = this.appData.knowledgeBase.filter(f=>f.name!==name);
+      this.saveData();
+    },
+
+    addTeamMember() {
+      if (!this.newMember.name || !this.newMember.email) { this.toast('Name and email required','error'); return; }
+      this.appData.team.push({...this.newMember, id:Date.now()});
+      this.appData.auditLog.unshift({id:Date.now(),action:`Team member ${this.newMember.name} added`,user:'You',time:new Date().toLocaleString()});
+      this.saveData();
+      this.toast('Team member added!','success');
+      this.showTeamModal = false;
+    },
+
+    removeTeamMember(id) {
+      if (!confirm('Remove this team member?')) return;
+      const member = this.appData.team.find(m=>m.id===id);
+      this.appData.team = this.appData.team.filter(m=>m.id!==id);
+      if (member) this.appData.auditLog.unshift({id:Date.now(),action:`Team member ${member.name} removed`,user:'You',time:new Date().toLocaleString()});
+      this.saveData();
+      this.toast('Member removed','info');
+    },
+
+    // ---- VIBE PROMPT ----
+    processVibePrompt() {
+      const p = this.vibePrompt.toLowerCase().trim();
+      if (!p) return;
+      if (p.includes('agent') || p.includes('assistant') || p.includes('bot')) {
+        this.showAgentModal = true;
+        this.resetAgentForm();
+        // Pre-fill from vibe
+        const names = ['Smart','Quick','Deep','Pro'];
+        this.agentForm.name = names[Math.floor(Math.random()*names.length)] + ' Agent';
+        this.agentForm.role = this.vibePrompt;
+        this.toast('Agent form pre-filled from your prompt!','success');
+      } else if (p.includes('workflow') || p.includes('pipeline') || p.includes('automate')) {
+        this.showWorkflowModal = true;
+        this.resetWorkflowForm();
+        this.workflowForm.name = 'New Workflow';
+        this.workflowForm.description = this.vibePrompt;
+        this.workflowForm.aiPrompt = this.vibePrompt;
+        this.generateSteps();
+        this.toast('Workflow form pre-filled!','success');
+      } else {
+        this.toast('Try: "create an agent that..." or "build a workflow for..."','info');
+      }
+      this.vibePrompt = '';
+    },
+
+    // ---- EXPORT/IMPORT ----
+    exportData() {
+      const blob = new Blob([JSON.stringify(this.appData,null,2)],{type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'breezeai-export.json';
+      a.click(); URL.revokeObjectURL(url);
+      this.toast('Data exported!','success');
+    },
+
+    importData() {
+      document.getElementById('importInput').click();
+    },
+
+    handleImport(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          this.appData = {...this.getDefaultData(),...data};
+          this.saveData();
+          this.toast('Data imported!','success');
+          this.$nextTick(()=>this.initCharts());
+        } catch(err) {
+          this.toast('Invalid JSON file','error');
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    },
+
+    // ---- CHARTS ----
+    destroyChart(id) {
+      if (this.charts[id]) { this.charts[id].destroy(); delete this.charts[id]; }
+    },
+
+    getChartDefaults() {
+      return {
+        color:'rgba(226,232,240,0.7)',
+        gridColor:'rgba(255,255,255,0.05)',
+        cyan:'#06b6d4',purple:'#8b5cf6',emerald:'#10b981',amber:'#f59e0b'
+      };
+    },
+
+    initCharts() {
+      this.initUsageChart();
+    },
+
+    initUsageChart() {
+      this.destroyChart('usage');
+      const el = document.getElementById('usageChart');
+      if (!el) return;
+      const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      const c = this.getChartDefaults();
+      this.charts.usage = new Chart(el, {
+        type:'line',
+        data:{
+          labels,
+          datasets:[
+            {label:'API Calls',data:[420,380,510,445,620,289,390],borderColor:c.cyan,backgroundColor:'rgba(6,182,212,0.08)',tension:0.4,fill:true,pointBackgroundColor:c.cyan,pointRadius:4},
+            {label:'Tasks Done',data:[38,29,45,41,58,22,37],borderColor:c.purple,backgroundColor:'rgba(139,92,246,0.08)',tension:0.4,fill:true,pointBackgroundColor:c.purple,pointRadius:4}
+          ]
+        },
+        options:{responsive:true,maintainAspectRatio:true,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:c.color,font:{size:11},usePointStyle:true}}},scales:{x:{ticks:{color:c.color,font:{size:11}},grid:{color:c.gridColor}},y:{ticks:{color:c.color,font:{size:11}},grid:{color:c.gridColor}}}}
+      });
+    },
+
+    initAnalyticsCharts() {
+      this.destroyChart('cost');
+      this.destroyChart('dept');
+      this.destroyChart('success');
+
+      const c = this.getChartDefaults();
+
+      const costEl = document.getElementById('costChart');
+      if (costEl) {
+        this.charts.cost = new Chart(costEl, {
+          type:'doughnut',
+          data:{labels:['Claude Sonnet','GPT-4o','GPT-4o Mini','Grok-2'],data:[{value:124},{value:89},{value:43},{value:28}],
+          datasets:[{data:[124,89,43,28],backgroundColor:['rgba(139,92,246,0.7)','rgba(6,182,212,0.7)','rgba(16,185,129,0.7)','rgba(245,158,11,0.7)'],borderWidth:0}]},
+          options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'right',labels:{color:c.color,font:{size:11},usePointStyle:true}}}}
+        });
+      }
+
+      const deptEl = document.getElementById('deptChart');
+      if (deptEl) {
+        this.charts.dept = new Chart(deptEl, {
+          type:'bar',
+          data:{
+            labels:['Engineering','Sales','Marketing','Operations','Research'],
+            datasets:[{label:'API calls',data:[1240,890,540,320,710],backgroundColor:'rgba(6,182,212,0.6)',borderRadius:6,borderSkipped:false}]
+          },
+          options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:c.color,font:{size:10}},grid:{color:c.gridColor}},y:{ticks:{color:c.color,font:{size:10}},grid:{color:c.gridColor}}}}
+        });
+      }
+
+      const successEl = document.getElementById('successChart');
+      if (successEl) {
+        const labels = Array.from({length:14},(_, i)=>`Day ${i+1}`);
+        this.charts.success = new Chart(successEl, {
+          type:'line',
+          data:{
+            labels,
+            datasets:[{label:'Success Rate %',data:labels.map(()=>Math.round(82+Math.random()*16)),borderColor:c.emerald,backgroundColor:'rgba(16,185,129,0.08)',tension:0.4,fill:true,pointRadius:3,pointBackgroundColor:c.emerald}]
+          },
+          options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:c.color,font:{size:11},usePointStyle:true}}},scales:{x:{ticks:{color:c.color,font:{size:10}},grid:{color:c.gridColor}},y:{min:70,max:100,ticks:{color:c.color,font:{size:10}},grid:{color:c.gridColor}}}}
+        });
+      }
+    },
+
+    // ---- UTILS ----
+    toast(message, type='info') {
+      const colors = {success:'bg-emerald-500/90',error:'bg-red-500/90',info:'bg-cyan-500/90',warning:'bg-amber-500/90'};
+      const icons = {success:'✓',error:'✕',info:'ℹ',warning:'⚠'};
+      const el = document.createElement('div');
+      el.className = `toast flex items-center gap-2 text-white text-sm font-medium px-4 py-3 rounded-xl shadow-lg ${colors[type]||colors.info}`;
+      el.innerHTML = `<span>${icons[type]||icons.info}</span><span>${message}</span>`;
+      document.getElementById('toastContainer').appendChild(el);
+      setTimeout(()=>el.remove(), 3100);
+    },
+
+    sleep(ms) { return new Promise(r=>setTimeout(r,ms)); },
+  }
+}
+</script>
+</body>
+</html>
