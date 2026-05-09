@@ -246,10 +246,102 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* Experiment Lab */
+  .lab-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+  }
+  .lab-session-info { font-size: 12px; color: var(--muted); }
+  .lab-session-id { color: var(--accent2); font-family: monospace; }
+  .lab-actions { display: flex; gap: 8px; }
+
+  .cell {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 16px; overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .cell.cell--running { border-color: var(--accent); }
+  .cell.cell--done    { border-color: var(--accent2); }
+  .cell.cell--error   { border-color: var(--red); }
+
+  .cell-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.02); cursor: pointer;
+  }
+  .cell-id {
+    font-family: monospace; font-size: 12px; font-weight: 700;
+    color: var(--accent); background: rgba(108,99,255,0.12);
+    padding: 2px 8px; border-radius: 4px; flex-shrink: 0;
+  }
+  .cell-title { flex: 1; font-size: 13px; color: var(--muted); }
+  .cell-header-actions { display: flex; gap: 6px; margin-left: auto; }
+  .btn-xs {
+    padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); font-size: 11px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-xs:hover { border-color: var(--accent); color: var(--accent); }
+
+  .cell-body { padding: 16px; }
+  .cell-config-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px;
+  }
+  .field-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .field-input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 7px 10px; color: var(--text);
+    font-size: 13px; outline: none; transition: border-color 0.15s;
+  }
+  .field-input:focus { border-color: var(--accent); }
+  select.field-input { cursor: pointer; }
+  .field-range { display: flex; align-items: center; gap: 8px; }
+  .field-range input[type=range] { flex: 1; accent-color: var(--accent); }
+  .range-val { font-size: 12px; color: var(--accent2); min-width: 28px; text-align: right; }
+
+  .system-prompt-wrap { margin-bottom: 14px; }
+  .field-textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 10px; color: var(--text);
+    font-size: 13px; outline: none; resize: vertical; min-height: 64px;
+    font-family: inherit; transition: border-color 0.15s;
+  }
+  .field-textarea:focus { border-color: var(--accent); }
+
+  .cell-query-row { display: flex; gap: 8px; margin-bottom: 14px; }
+
+  .cell-result {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px; display: none;
+  }
+  .cell-result.visible { display: block; }
+  .cell-result-text { font-size: 13px; line-height: 1.7; margin-bottom: 12px; }
+  .cell-meta {
+    display: flex; gap: 14px; flex-wrap: wrap;
+    padding-top: 10px; border-top: 1px solid var(--border);
+  }
+  .meta-item { font-size: 11px; color: var(--muted); }
+  .meta-item span { color: var(--text); font-weight: 600; }
+  .meta-hash { font-family: monospace; color: var(--accent2); }
+
+  .cell-isolated-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; padding: 2px 8px; border-radius: 999px;
+    background: rgba(0,212,170,0.1); color: var(--accent2);
+    border: 1px solid rgba(0,212,170,0.2); margin-left: 8px;
+  }
+
+  .empty-lab {
+    text-align: center; padding: 60px 20px; color: var(--muted);
+  }
+  .empty-lab-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-lab p { font-size: 14px; margin-bottom: 4px; }
+  .empty-lab small { font-size: 12px; }
+
   @media (max-width: 768px) {
     .main { grid-template-columns: 1fr; }
     .sidebar { display: none; }
-    .council-grid, .council-grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .council-grid, .council-grid-2, .grid-3, .cell-config-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -286,6 +378,9 @@
     </div>
     <div class="nav-item" onclick="showPage('console', this)">
       <span class="icon">▶</span> Lab Console
+    </div>
+    <div class="nav-item" onclick="showPage('lab', this)">
+      <span class="icon">🧪</span> Experiment Lab
     </div>
     <div class="sidebar-label sidebar-label--spaced">System</div>
     <div class="nav-item"><span class="icon">⚙</span> Settings</div>
@@ -546,6 +641,32 @@
       </div>
     </div>
 
+    <!-- Experiment Lab -->
+    <div class="page" id="page-lab">
+      <div class="page-title">Experiment Lab</div>
+      <div class="page-sub">Isolated, reproducible AI agent experiments. Each cell is sandboxed — no state bleeds between cells.</div>
+
+      <div class="lab-toolbar">
+        <div class="lab-session-info">
+          Session: <span class="lab-session-id" id="sessionId">loading...</span>
+          &nbsp;·&nbsp; <span id="cellCount">0</span> cells
+          <span class="cell-isolated-badge">⬡ Isolation Active</span>
+        </div>
+        <div class="lab-actions">
+          <button type="button" class="btn btn-secondary" onclick="exportSession()">Export Session</button>
+          <button type="button" class="btn btn-primary" onclick="newCell()">+ New Cell</button>
+        </div>
+      </div>
+
+      <div id="cellContainer">
+        <div class="empty-lab" id="emptyLab">
+          <div class="empty-lab-icon">🧪</div>
+          <p>No experiment cells yet.</p>
+          <small>Click "New Cell" to create an isolated experiment.</small>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -670,6 +791,247 @@ window.addEventListener('load', () => {
   setTimeout(() => log('FastAPI server connected at ' + BASE, 'info'), 1500);
   setTimeout(() => log('System nominal. Awaiting queries.', 'success'), 1900);
 });
+
+/* ═══════════════════════════════════════
+   EXPERIMENT LAB — Isolated Cell System
+═══════════════════════════════════════ */
+
+const LAB = {
+  sessionId: null,
+  sessionStart: null,
+  cells: {},
+  cellOrder: [],
+  cellCounter: 0,
+};
+
+const MODEL_RESPONSES = {
+  'claude-opus-4-7': (q, sp, temp, seed) =>
+    `[Claude Opus | T=${temp} | seed=${seed}]\n\nSystem context applied: "${sp.slice(0,40)}..."\n\nAnalysis: ${q}\n\nThis response reflects strategic reasoning with ethical constraints. Confidence: ${(0.85 + (seed % 13) * 0.01).toFixed(2)}. Temperature ${temp} influences creative breadth.`,
+  'gpt-4o': (q, sp, temp, seed) =>
+    `[GPT-4o | T=${temp} | seed=${seed}]\n\nSystem: "${sp.slice(0,40)}..."\n\nResponse to: ${q}\n\nCross-domain analysis complete. Synthesis confidence: ${(0.80 + (seed % 17) * 0.01).toFixed(2)}. Output shaped by temperature ${temp}.`,
+  'gemini-ultra': (q, sp, temp, seed) =>
+    `[Gemini Ultra | T=${temp} | seed=${seed}]\n\nSystem directive: "${sp.slice(0,40)}..."\n\nResearch synthesis for: ${q}\n\nFactual grounding score: ${(0.88 + (seed % 11) * 0.01).toFixed(2)}. Empirical mode active.`,
+};
+
+function genId(prefix) {
+  return prefix + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+
+function hashParams(model, temp, seed, sp, q) {
+  const str = [model, temp, seed, sp, q].join('|');
+  let h = 0;
+  for (let i = 0; i < str.length; i++) { h = ((h << 5) - h + str.charCodeAt(i)) | 0; }
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+function initSession() {
+  LAB.sessionId = genId('SES');
+  LAB.sessionStart = new Date();
+  const el = document.getElementById('sessionId');
+  if (el) el.textContent = LAB.sessionId;
+}
+
+function updateCellCount() {
+  const el = document.getElementById('cellCount');
+  if (el) el.textContent = LAB.cellOrder.length;
+  const empty = document.getElementById('emptyLab');
+  if (empty) empty.style.display = LAB.cellOrder.length ? 'none' : 'block';
+}
+
+function newCell() {
+  const empty = document.getElementById('emptyLab');
+  if (empty) empty.style.display = 'none';
+  LAB.cellCounter++;
+  const cellId = 'EXP-' + String(LAB.cellCounter).padStart(3, '0');
+  LAB.cells[cellId] = {
+    id: cellId,
+    status: 'idle',
+    config: { model: 'claude-opus-4-7', temperature: 0.7, seed: 42, systemPrompt: 'You are a specialized AI agent in an isolated experiment cell. Respond only based on the information provided. Do not reference external context.', query: '' },
+    result: null,
+    createdAt: new Date().toISOString(),
+  };
+  LAB.cellOrder.push(cellId);
+  renderCell(cellId);
+  updateCellCount();
+  log('New experiment cell created: ' + cellId, 'system');
+}
+
+function renderCell(cellId) {
+  const cell = LAB.cells[cellId];
+  const container = document.getElementById('cellContainer');
+
+  const div = document.createElement('div');
+  div.className = 'cell';
+  div.id = 'cell-' + cellId;
+  div.innerHTML = `
+    <div class="cell-header" onclick="toggleCell('${cellId}')">
+      <span class="cell-id">${cellId}</span>
+      <span class="cell-title" id="cell-title-${cellId}">Idle — no query run yet</span>
+      <div class="cell-header-actions" onclick="event.stopPropagation()">
+        <button type="button" class="btn-xs" onclick="cloneCell('${cellId}')">Clone</button>
+        <button type="button" class="btn-xs" onclick="exportCell('${cellId}')">Export</button>
+        <button type="button" class="btn-xs" onclick="removeCell('${cellId}')">Remove</button>
+      </div>
+    </div>
+    <div class="cell-body" id="cell-body-${cellId}">
+      <div class="cell-config-grid">
+        <div>
+          <div class="field-label">Model</div>
+          <select class="field-input" id="${cellId}-model" onchange="updateConfig('${cellId}','model',this.value)">
+            <option value="claude-opus-4-7">Claude Opus 4.7</option>
+            <option value="gpt-4o">GPT-4o</option>
+            <option value="gemini-ultra">Gemini Ultra</option>
+          </select>
+        </div>
+        <div>
+          <div class="field-label">Temperature <span id="${cellId}-temp-val" style="color:var(--accent2)">0.7</span></div>
+          <div class="field-range">
+            <input type="range" min="0" max="2" step="0.1" value="0.7"
+              oninput="document.getElementById('${cellId}-temp-val').textContent=this.value; updateConfig('${cellId}','temperature',parseFloat(this.value))">
+          </div>
+        </div>
+        <div>
+          <div class="field-label">Seed (reproducibility)</div>
+          <input type="number" class="field-input" value="42" min="0" max="99999"
+            onchange="updateConfig('${cellId}','seed',parseInt(this.value)||42)">
+        </div>
+      </div>
+      <div class="system-prompt-wrap">
+        <div class="field-label">System Prompt (isolation context)</div>
+        <textarea class="field-textarea" id="${cellId}-sysprompt"
+          onchange="updateConfig('${cellId}','systemPrompt',this.value)"
+          >You are a specialized AI agent in an isolated experiment cell. Respond only based on the information provided. Do not reference external context.</textarea>
+      </div>
+      <div class="cell-query-row">
+        <input class="field-input" id="${cellId}-query" placeholder="Enter experiment query..." style="flex:1"
+          onkeydown="if(event.key==='Enter')runCell('${cellId}')">
+        <button type="button" class="btn btn-primary" id="${cellId}-run-btn" onclick="runCell('${cellId}')">Run</button>
+      </div>
+      <div class="cell-result" id="${cellId}-result">
+        <div class="cell-result-text" id="${cellId}-result-text"></div>
+        <div class="cell-meta" id="${cellId}-meta"></div>
+      </div>
+    </div>
+  `;
+  container.appendChild(div);
+}
+
+function updateConfig(cellId, key, val) {
+  if (LAB.cells[cellId]) LAB.cells[cellId].config[key] = val;
+}
+
+function toggleCell(cellId) {
+  const body = document.getElementById('cell-body-' + cellId);
+  if (body) body.style.display = body.style.display === 'none' ? '' : 'none';
+}
+
+function runCell(cellId) {
+  const cell = LAB.cells[cellId];
+  const qEl = document.getElementById(cellId + '-query');
+  const q = qEl ? qEl.value.trim() : '';
+  if (!q) { qEl && qEl.focus(); return; }
+
+  cell.config.query = q;
+  cell.status = 'running';
+  const cellEl = document.getElementById('cell-' + cellId);
+  if (cellEl) { cellEl.className = 'cell cell--running'; }
+  const title = document.getElementById('cell-title-' + cellId);
+  if (title) title.innerHTML = '<span class="spinner"></span> Running experiment...';
+  const runBtn = document.getElementById(cellId + '-run-btn');
+  if (runBtn) runBtn.disabled = true;
+
+  const { model, temperature, seed, systemPrompt } = cell.config;
+  const startTime = Date.now();
+
+  log(`[${cellId}] Running: model=${model} temp=${temperature} seed=${seed}`, 'system');
+
+  const delay = 1200 + Math.random() * 800;
+  setTimeout(() => {
+    const latency = Date.now() - startTime;
+    const responseFn = MODEL_RESPONSES[model] || MODEL_RESPONSES['claude-opus-4-7'];
+    const responseText = responseFn(q, systemPrompt, temperature, seed);
+    const tokens = Math.floor(responseText.length / 4);
+    const hash = hashParams(model, temperature, seed, systemPrompt, q);
+
+    cell.status = 'done';
+    cell.result = { responseText, latency, tokens, hash, completedAt: new Date().toISOString() };
+
+    if (cellEl) cellEl.className = 'cell cell--done';
+    if (title) title.textContent = q.slice(0, 60) + (q.length > 60 ? '...' : '');
+    if (runBtn) runBtn.disabled = false;
+
+    const resultEl = document.getElementById(cellId + '-result');
+    const resultText = document.getElementById(cellId + '-result-text');
+    const metaEl = document.getElementById(cellId + '-meta');
+
+    if (resultText) resultText.textContent = responseText;
+    if (metaEl) metaEl.innerHTML = `
+      <div class="meta-item">Model <span>${model}</span></div>
+      <div class="meta-item">Temp <span>${temperature}</span></div>
+      <div class="meta-item">Seed <span>${seed}</span></div>
+      <div class="meta-item">Latency <span>${latency}ms</span></div>
+      <div class="meta-item">Tokens ~<span>${tokens}</span></div>
+      <div class="meta-item">Hash <span class="meta-hash">${hash}</span></div>
+      <div class="meta-item">Completed <span>${new Date().toLocaleTimeString()}</span></div>
+    `;
+    if (resultEl) resultEl.classList.add('visible');
+    log(`[${cellId}] Done. Latency=${latency}ms tokens~${tokens} hash=${hash}`, 'success');
+  }, delay);
+}
+
+function cloneCell(cellId) {
+  const src = LAB.cells[cellId];
+  if (!src) return;
+  newCell();
+  const newId = LAB.cellOrder[LAB.cellOrder.length - 1];
+  LAB.cells[newId].config = { ...src.config };
+  const modelEl = document.getElementById(newId + '-model');
+  if (modelEl) modelEl.value = src.config.model;
+  const spEl = document.getElementById(newId + '-sysprompt');
+  if (spEl) spEl.value = src.config.systemPrompt;
+  const tempVal = document.getElementById(newId + '-temp-val');
+  if (tempVal) tempVal.textContent = src.config.temperature;
+  log(`[${newId}] Cloned from ${cellId}`, 'info');
+}
+
+function removeCell(cellId) {
+  const el = document.getElementById('cell-' + cellId);
+  if (el) el.remove();
+  delete LAB.cells[cellId];
+  LAB.cellOrder = LAB.cellOrder.filter(id => id !== cellId);
+  updateCellCount();
+  log(`[${cellId}] Removed from session`, 'warn');
+}
+
+function exportCell(cellId) {
+  const cell = LAB.cells[cellId];
+  if (!cell) return;
+  const data = { sessionId: LAB.sessionId, cell };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = cellId + '-' + LAB.sessionId + '.json';
+  a.click();
+  log(`[${cellId}] Exported as JSON`, 'success');
+}
+
+function exportSession() {
+  const data = {
+    sessionId: LAB.sessionId,
+    sessionStart: LAB.sessionStart,
+    exportedAt: new Date().toISOString(),
+    cellCount: LAB.cellOrder.length,
+    cells: LAB.cellOrder.map(id => LAB.cells[id]),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'session-' + LAB.sessionId + '.json';
+  a.click();
+  log('Full session exported: ' + LAB.sessionId, 'success');
+}
+
+initSession();
 </script>
 
 </body>
