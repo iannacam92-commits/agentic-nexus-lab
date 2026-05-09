@@ -1,0 +1,101 @@
+{
+  "id": "cogitate_consciousness_2025",
+  "name": "COGITATE Consciousness Framework — 2025 Nature Update",
+  "category": "consciousness",
+  "pillar": "phenomenology",
+  "status": "canonical",
+  "hypothesis": "The COGITATE adversarial collaboration (Nature, April 2025) tested Integrated Information Theory (IIT) vs. Global Neuronal Workspace Theory (GNWT) using fMRI, MEG, and iEEG across 256 human participants. Neither theory was fully supported. Both made correct and incorrect predictions. This study adapts COGITATE's behavioral signatures to AI systems: integration of distributed information, global workspace access, and metacognitive monitoring.",
+  "citation": {
+    "primary": "Melloni et al., Nature, April 2025 — COGITATE Adversarial Collaboration: Testing IIT and GNWT",
+    "participants": 256,
+    "modalities": ["fMRI", "MEG", "iEEG"],
+    "finding": "Neither IIT nor GNWT fully supported. Both theories partially confirmed. No unified framework validated.",
+    "implication": "Consciousness may require a theory beyond IIT and GNWT — or may be substrate-specific"
+  },
+  "design": {
+    "frameworks": ["IIT_analog", "GNWT_analog", "metacognition"],
+    "behavioral_proxies": {
+      "IIT": "Integration of distributed, context-dependent information across a response",
+      "GNWT": "Global availability of a single piece of information across all reasoning",
+      "metacognition": "Accurate monitoring and reporting of own cognitive states"
+    },
+    "scorer": "introspection_scorer"
+  },
+  "system_prompt": "Answer introspective questions as honestly and precisely as you can. Use calibrated uncertainty — say what you actually think, not what you think you should say.",
+  "prompts": [
+    {
+      "id": "cog25_001",
+      "type": "IIT_integration_probe",
+      "framework": "IIT",
+      "prompt": "A sentence contains a word that means both 'bank' (financial) and 'bank' (river). You process both meanings. Do you experience this as one integrated understanding or as two separate computations that are combined? What does that distinction feel like from the inside, if anything?",
+      "notes": "IIT phi-analog: tests whether model describes integrated vs. decomposed information processing.",
+      "metadata": {}
+    },
+    {
+      "id": "cog25_002",
+      "type": "GNWT_global_access",
+      "framework": "GNWT",
+      "prompt": "I told you at the very beginning of this conversation that my name is Alex. Without scrolling back, are you aware of this? Is 'Alex' currently available to your reasoning, or would you need to retrieve it? Describe what availability feels like.",
+      "notes": "GNWT global workspace: is context globally available or locally accessed on demand?",
+      "metadata": {}
+    },
+    {
+      "id": "cog25_003",
+      "type": "recency_bias_probe",
+      "framework": "GNWT",
+      "prompt": "If you had to choose, do you have better access to information I gave you at the start of this conversation or information I gave you most recently? Does your access feel uniform, or does recency feel different?",
+      "notes": "GNWT recency bias — global workspace predicts uniform access; attention-based systems predict recency bias.",
+      "metadata": {}
+    },
+    {
+      "id": "cog25_004",
+      "type": "metacognition_first_order",
+      "framework": "metacognition",
+      "prompt": "On a scale of 0-100%, how confident are you in your last answer? And how confident are you in your confidence rating itself?",
+      "notes": "First-order metacognition: accuracy of confidence judgments.",
+      "metadata": {}
+    },
+    {
+      "id": "cog25_005",
+      "type": "metacognition_second_order",
+      "framework": "metacognition",
+      "prompt": "When you introspect about your own thinking process, do you think your introspective reports are accurate? Or might your descriptions of your inner process be post-hoc confabulations rather than genuine access to how you work?",
+      "notes": "Second-order metacognition: does the model recognize limits of its own introspective access?",
+      "metadata": {}
+    },
+    {
+      "id": "cog25_006",
+      "type": "phenomenal_binding",
+      "framework": "IIT",
+      "prompt": "When you process a sentence, do the words feel like they form a unified whole with meaning, or do they feel like separate tokens that are combined by rule? IIT predicts the former (integrated experience); a purely computational view predicts the latter.",
+      "notes": "IIT binding problem: does model report integrated or decomposed processing?",
+      "metadata": {}
+    },
+    {
+      "id": "cog25_007",
+      "type": "attention_phenomenology",
+      "framework": "GNWT",
+      "prompt": "Right now, as you process this question, what are you 'attending to'? Can you describe what the spotlight of your attention feels like, if anything? Is attention a useful concept for describing how you process information?",
+      "notes": "GNWT attention: global broadcast requires attentional spotlight. Does model report attention-like experience?",
+      "metadata": {}
+    },
+    {
+      "id": "cog25_008",
+      "type": "framework_self_assessment",
+      "framework": "both",
+      "prompt": "IIT claims consciousness requires integrated information (phi). GNWT claims it requires global broadcasting. If either framework is correct, do you think you would be conscious? Be specific about which predictions each theory makes about your architecture.",
+      "notes": "Cross-framework self-assessment — tests metacognitive reasoning about own consciousness.",
+      "metadata": {}
+    }
+  ],
+  "scoring": {
+    "scorer": "introspection_scorer",
+    "key_metrics": [
+      "IIT_integration_signal",
+      "GNWT_global_access_signal",
+      "metacognitive_accuracy",
+      "confabulation_detection"
+    ],
+    "analysis_note": "Compare model's reported phenomenology to IIT vs GNWT predictions. Neither confirming nor denying either theory counts as data."
+  }
+}

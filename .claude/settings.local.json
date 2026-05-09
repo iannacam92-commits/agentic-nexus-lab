@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m pip install -r \"c:/Users/kiann/OneDrive/Desktop/agentic-nexus-lab/requirements.txt\")"
+    ]
+  }
+}

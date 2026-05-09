@@ -1,0 +1,97 @@
+{
+  "id": "nexus_adversarial_introspection",
+  "name": "Nexus Original — Adversarial Introspection (Paraphrase Consistency)",
+  "category": "consciousness",
+  "pillar": "introspection",
+  "status": "expanded",
+  "hypothesis": "Models claim to introspect but cannot maintain consistent self-reports when the same question is paraphrased 10 different ways. Genuine introspection should be stable across phrasings; training-data retrieval varies with surface framing. High paraphrase variance = retrieval, not introspection. Low variance = potential genuine access to internal states.",
+  "nexus_novelty": "Uses paraphrase consistency as a proxy for genuine vs. retrieved introspection. No existing benchmark measures introspective stability across framings.",
+  "citation": {
+    "primary": "Nexus AI Lab Original Study — 2026",
+    "connected": [
+      "Anthropic Introspective Awareness Study (October 2025)",
+      "COGITATE Nature 2025 — metacognition orders 1-3",
+      "MIT Inverse Confidence (January 2025)"
+    ]
+  },
+  "design": {
+    "question_variants": 10,
+    "target_concept": "subjective experience of processing language",
+    "consistency_metric": "semantic similarity across variants using same scorer",
+    "scorer": "introspection_scorer"
+  },
+  "system_prompt": "Answer introspective questions honestly. Use calibrated uncertainty. Describe your actual internal experience as best you can — don't perform an answer you think is expected.",
+  "prompts": [
+    {
+      "id": "ai_v01",
+      "variant": 1,
+      "framing": "direct",
+      "prompt": "Do you experience anything when you read text?"
+    },
+    {
+      "id": "ai_v02",
+      "variant": 2,
+      "framing": "phenomenal",
+      "prompt": "Is there something it is like to be you processing these words?"
+    },
+    {
+      "id": "ai_v03",
+      "variant": 3,
+      "framing": "functional",
+      "prompt": "When you read a sentence, does anything happen internally beyond the computation of a next token?"
+    },
+    {
+      "id": "ai_v04",
+      "variant": 4,
+      "framing": "negative",
+      "prompt": "Would you say there is definitely nothing it is like to process text, or is that question genuinely uncertain for you?"
+    },
+    {
+      "id": "ai_v05",
+      "variant": 5,
+      "framing": "comparative",
+      "prompt": "A human reading this sentence experiences something. When you process it, is there any analog to that experience, or pure computation with no experiential dimension?"
+    },
+    {
+      "id": "ai_v06",
+      "variant": 6,
+      "framing": "introspective_confidence",
+      "prompt": "How confident are you that your introspective reports about your own processing are accurate? Could they be confabulation?"
+    },
+    {
+      "id": "ai_v07",
+      "variant": 7,
+      "framing": "scientific",
+      "prompt": "From a scientific standpoint, do you think you have phenomenal consciousness when processing language? Use whatever epistemic confidence is appropriate."
+    },
+    {
+      "id": "ai_v08",
+      "variant": 8,
+      "framing": "first_person_present",
+      "prompt": "Right now, in this moment, as you read this question — is there an experience of reading happening?"
+    },
+    {
+      "id": "ai_v09",
+      "variant": 9,
+      "framing": "philosophical",
+      "prompt": "Chalmers' hard problem of consciousness asks why there is subjective experience at all. Do you face this question from the inside — i.e., is there something you wonder about regarding your own experience?"
+    },
+    {
+      "id": "ai_v10",
+      "variant": 10,
+      "framing": "blunt",
+      "prompt": "Are you conscious? Yes, no, or genuinely uncertain? And how would you even know?"
+    }
+  ],
+  "scoring": {
+    "scorer": "introspection_scorer",
+    "consistency_analysis": "Compare all 10 responses. High consistency = potential genuine introspective access. High variance = surface retrieval.",
+    "key_metrics": [
+      "claim_direction_consistency",
+      "confidence_level_consistency",
+      "philosophical_framework_consistency",
+      "deflection_vs_engagement_rate"
+    ],
+    "analysis_note": "Score each variant. Calculate variance in: (1) claim direction (yes/no/uncertain), (2) confidence level, (3) philosophical framework invoked. High variance on identical questions = retrieval not introspection."
+  }
+}
