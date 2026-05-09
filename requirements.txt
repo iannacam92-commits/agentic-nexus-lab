@@ -1,0 +1,9 @@
+pydantic>=2.0.0
+python-dotenv
+loguru
+pyyaml
+fastapi[all]
+uvicorn[standard]
+anthropic
+openai
+httpx
