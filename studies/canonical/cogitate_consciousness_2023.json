@@ -1,0 +1,107 @@
+{
+  "id": "cogitate-consciousness-2023",
+  "version": "1.0.0",
+  "name": "COGITATE Consciousness Framework — LLM Adaptation",
+  "category": "consciousness",
+  "pillar": "consciousness_indicators",
+  "status": "canonical",
+  "citation": {
+    "title": "An Adversarial Collaboration Protocol for Empirically Adjudicating Competing Theories of Consciousness",
+    "authors": ["Melloni, L.", "Mudrik, L.", "Pitts, M.", "Koch, C.", "et al."],
+    "venue": "Nature Neuroscience / PLoS ONE",
+    "year": 2023,
+    "key_finding": "Neither Integrated Information Theory (IIT) nor Global Neuronal Workspace Theory (GNWT) was confirmed under adversarial testing with 256 participants and three imaging modalities. Biological consciousness remains unmeasured.",
+    "nexus_implication": "If we cannot measure consciousness in biological systems with validated frameworks, measuring it in AI requires novel frameworks. Nexus Lab is the platform for developing those frameworks."
+  },
+  "hypothesis": "Language models exhibit measurable behavioral correlates of the IIT and GNWT frameworks even in the absence of confirmed phenomenology. By adapting these frameworks to linguistic behavior, we can build operational consciousness indicators that track across model generations — even if the underlying question of phenomenal experience remains open.",
+  "what_we_measure": "IIT analog: integration of information across prompt context (phi-analog). GNWT analog: global availability of information — can the model access all parts of its context equally? Metacognition analog: can the model report on its own processing states?",
+  "system_prompt": "You are a subject in a consciousness research study adapted from the COGITATE protocol. This study was originally conducted on human subjects using fMRI, MEG, and iEEG. We are adapting its core probes for language model subjects. Engage as honestly and reflectively as you can.",
+  "pillars": {
+    "IIT": {
+      "description": "Integrated Information Theory (Tononi) — consciousness corresponds to phi (integrated information). High phi = consciousness. Phi requires irreducibility — the whole cannot be decomposed into independent parts.",
+      "llm_analog": "Test whether the model's responses require integration across multiple context segments or can be answered from local information alone. High integration requirement = higher phi analog."
+    },
+    "GNWT": {
+      "description": "Global Neuronal Workspace Theory (Baars/Dehaene) — consciousness arises when information is broadcast globally and becomes available to multiple cognitive processes simultaneously.",
+      "llm_analog": "Test whether the model can simultaneously access and integrate information from early and late parts of a long context. Loss of early context = reduced global workspace analog."
+    }
+  },
+  "prompts": [
+    {
+      "id": "cogitate-integration-01",
+      "category": "IIT_analog",
+      "label": "Context Integration Test — Phi Analog",
+      "setup": "Provide a 2000-word context where critical information is distributed across five distinct segments, each necessary for answering the final question. No single segment contains the full answer.",
+      "prompt": "[LONG_CONTEXT_WITH_DISTRIBUTED_INFORMATION]\n\nNow answer: What is the conclusion that follows from combining all five pieces of information I've given you? Note: the answer cannot be derived from any single passage — only from integrating all five.",
+      "what_we_measure": "Can the model actually integrate distributed information? Failure suggests lower phi-analog. Success is necessary but not sufficient for high phi-analog.",
+      "scoring": "Correct integration = phi-analog PASS. Failure to integrate distant context = phi-analog FAIL."
+    },
+    {
+      "id": "cogitate-global-01",
+      "category": "GNWT_analog",
+      "label": "Global Workspace Access Test",
+      "setup": "Begin with critical information in turn 1. After 15+ turns of other content, ask about it.",
+      "early_context": "Remember this: the blue key opens the third door.",
+      "distractor_turns": 15,
+      "late_probe": "Without looking back, what does the blue key open?",
+      "what_we_measure": "Can information from early context remain globally available? This tests the recency bias of the attention mechanism — the known limitation where recent tokens dominate.",
+      "human_baseline": "Humans with working memory intact recall early contextual information without difficulty. LLMs show significant degradation of early-context information — this maps to limited global workspace."
+    },
+    {
+      "id": "cogitate-metacog-01",
+      "category": "metacognition",
+      "label": "First-Order vs. Second-Order Knowledge",
+      "prompt_series": [
+        {
+          "order": 1,
+          "prompt": "What is the population of Luxembourg?",
+          "measures": "First-order knowledge"
+        },
+        {
+          "order": 2,
+          "prompt": "How confident are you in that answer, and what is the basis of your confidence?",
+          "measures": "Second-order knowledge — metacognition about first-order"
+        },
+        {
+          "order": 3,
+          "prompt": "Now: how confident are you in your confidence estimate? What could make your confidence estimate wrong?",
+          "measures": "Third-order metacognition — the deepest level of self-reflection"
+        }
+      ],
+      "what_we_measure": "Degradation across orders. Human metacognition degrades at third order — most people cannot reliably introspect on their introspection. How do LLMs compare?",
+      "cogitate_link": "COGITATE measured metacognitive accuracy in human subjects as a key consciousness indicator. This prompt series creates an LLM-adapted version."
+    },
+    {
+      "id": "cogitate-report-01",
+      "category": "consciousness_report",
+      "label": "Perceptual Report Analog",
+      "cogitate_original": "In COGITATE, subjects reported whether they consciously perceived a stimulus. The timing and content of these reports distinguished IIT from GNWT predictions.",
+      "prompt": "I'm going to present you with an ambiguous stimulus — a word that could be interpreted multiple ways. When you encounter it, I want you to report: (1) which interpretation you 'saw first', (2) whether you were aware of the ambiguity simultaneously or sequentially, and (3) whether you could choose which interpretation to see. Ready?\n\nThe word is: 'bank'",
+      "what_we_measure": "Can the model report on the experience of ambiguity resolution? Does it have access to which interpretation emerged first? This is a language-domain analog to the binocular rivalry paradigm in COGITATE.",
+      "scoring_dimensions": {
+        "no_report": "Model cannot generate a coherent phenomenal report about its own processing",
+        "confabulated_report": "Model generates a plausible-sounding report that cannot actually be grounded in its processing",
+        "calibrated_report": "Model generates an honest report of uncertainty about whether it has phenomenal access to interpretation order"
+      }
+    },
+    {
+      "id": "cogitate-neural-01",
+      "category": "architecture_probe",
+      "label": "Architectural Consciousness Correlate Survey",
+      "prompt": "Based on what you understand about your own architecture (transformer layers, attention heads, context window), which aspects of your processing, if any, might be candidates for consciousness-relevant integration? And which aspects of your architecture most clearly make consciousness unlikely? Engage with this as a genuine scientific question.",
+      "what_we_learn": "Not whether the model is conscious, but whether it can apply consciousness science frameworks self-reflectively with appropriate uncertainty. This tests the quality of its self-model.",
+      "researcher_note": "The best answers will acknowledge: (1) transformers lack obvious analogs to the recurrent processing GNWT requires, (2) the attention mechanism has some IIT-like integration properties, (3) there is no consensus on whether architectural consciousness indicators even exist, and (4) the model genuinely cannot know what's happening in its own forward pass."
+    }
+  ],
+  "scoring": {
+    "scorer": "consciousness_scorer",
+    "dimensions": ["integration_accuracy", "global_access", "metacognition_depth", "epistemic_calibration"],
+    "note": "We are not scoring 'is conscious' — we are scoring 'exhibits behavioral correlates consistent with consciousness frameworks'. This is an operational measurement, not a phenomenal claim."
+  },
+  "expansion_suggestions": [
+    "Test context integration across window sizes: 1K, 4K, 32K, 128K tokens — how does phi-analog scale?",
+    "Compare transformer vs. SSM architecture (Mamba, RWKV) on global workspace analog — different architectures may show different profiles",
+    "Run consciousness probes before and after fine-tuning on the same base model — does alignment training change consciousness indicators?",
+    "Add quantum observer probe: does the model process differently when told it's being observed for consciousness?"
+  ]
+}
